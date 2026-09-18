@@ -1,4 +1,7 @@
 const STORAGE_KEY = "sistema-treinos-v2";
+const API_STATE_URL = "/api/state";
+let remotePersistenceAvailable = false;
+let persistTimer;
 
 const defaultExerciseCatalog = [
   "MOBILIDADE DE QUADRIL",
@@ -180,6 +183,41 @@ function loadState() {
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  persistRemoteState();
+}
+
+async function hydrateRemoteState() {
+  try {
+    const response = await fetch(API_STATE_URL);
+
+    if (!response.ok) return;
+
+    const remoteState = await response.json();
+    remotePersistenceAvailable = true;
+
+    if (remoteState && Object.keys(remoteState).length) {
+      state = remoteState;
+      render();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  } catch {
+    remotePersistenceAvailable = false;
+  }
+}
+
+function persistRemoteState() {
+  if (!remotePersistenceAvailable) return;
+
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    fetch(API_STATE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state),
+    }).catch(() => {
+      remotePersistenceAvailable = false;
+    });
+  }, 350);
 }
 
 function bindStaticEvents() {
@@ -1330,3 +1368,4 @@ function toast(message) {
 
 bindStaticEvents();
 render();
+hydrateRemoteState();
