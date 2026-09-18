@@ -70,37 +70,37 @@ const initialDays = [
     name: "01",
     focus: "Peito, ombros e triceps",
     exercises: [
-      ["SUPINO INCLINADO", "3", "12", ""],
-      ["VOADOR", "3", "12", ""],
-      ["SUPINO MAQUINA PEGADA NEUTRA", "3", "12", ""],
-      ["DESENVOLVIMENTO ARTICULADO", "3", "12", ""],
-      ["ELEVACAO LATERAL", "3", "15", ""],
-      ["TRICEPS PULLEY", "3", "12", ""],
-      ["MERGULHO", "3", "12", ""],
+      ["SUPINO INCLINADO", "3", "12", "", ""],
+      ["VOADOR", "3", "12", "", ""],
+      ["SUPINO MAQUINA PEGADA NEUTRA", "3", "12", "", ""],
+      ["DESENVOLVIMENTO ARTICULADO", "3", "12", "", ""],
+      ["ELEVACAO LATERAL", "3", "15", "", ""],
+      ["TRICEPS PULLEY", "3", "12", "", ""],
+      ["MERGULHO", "3", "12", "", ""],
     ],
   },
   {
     name: "02",
     focus: "Pernas e abdomen",
     exercises: [
-      ["AGACHAMENTO HACK", "3", "12", ""],
-      ["LEG PRESS", "3", "12", ""],
-      ["AFUNDO", "3", "12", ""],
-      ["EXTENSORA", "3", "12", ""],
-      ["FLEXORA", "3", "12", ""],
-      ["ABDOMINAL NA PRANCHA DECLINADA", "3", "12", ""],
+      ["AGACHAMENTO HACK", "3", "12", "", ""],
+      ["LEG PRESS", "3", "12", "", ""],
+      ["AFUNDO", "3", "12", "", ""],
+      ["EXTENSORA", "3", "12", "", ""],
+      ["FLEXORA", "3", "12", "", ""],
+      ["ABDOMINAL NA PRANCHA DECLINADA", "3", "12", "", ""],
     ],
   },
   {
     name: "03",
     focus: "Costas e biceps",
     exercises: [
-      ["PUXADA HAMMER", "3", "12", ""],
-      ["REMADA BAIXA", "3", "12", ""],
-      ["PUXADA FRENTE SUPINADA", "3", "12", ""],
-      ["REMADA CAVALO", "3", "12", ""],
-      ["ROSCA DIRETA", "3", "12", ""],
-      ["BANCO SCOTH", "3", "12", ""],
+      ["PUXADA HAMMER", "3", "12", "", ""],
+      ["REMADA BAIXA", "3", "12", "", ""],
+      ["PUXADA FRENTE SUPINADA", "3", "12", "", ""],
+      ["REMADA CAVALO", "3", "12", "", ""],
+      ["ROSCA DIRETA", "3", "12", "", ""],
+      ["BANCO SCOTH", "3", "12", "", ""],
     ],
   },
 ];
@@ -492,7 +492,7 @@ function addDay() {
   state.days.push({
     name: String(state.days.length + 1).padStart(2, "0"),
     focus: "Personalizado",
-    exercises: [["", "3", "12", ""]],
+    exercises: [["", "3", "12", "", ""]],
   });
   state.activeDay = state.days.length - 1;
   render();
@@ -619,6 +619,7 @@ function renderDays() {
             <th>Exercicio</th>
             <th>Series</th>
             <th>Repeticoes</th>
+            <th>Descanso</th>
             <th>Carga/obs.</th>
             <th></th>
           </tr>
@@ -657,7 +658,7 @@ function renderDays() {
     });
 
     card.querySelector("[data-action='add-exercise']").addEventListener("click", () => {
-      day.exercises.push(["", "3", "12", ""]);
+      day.exercises.push(["", "3", "12", "", ""]);
       render();
       persist();
     });
@@ -714,7 +715,8 @@ function renderExerciseRows(tbody, day) {
         </select>
         <input class="custom-field ${customReps ? "visible" : ""}" data-column="2" data-kind="custom-value" value="${customReps ? escapeAttr(exercise[2]) : ""}" placeholder="Ex.: 8 + isometria" />
       </td>
-      <td><input data-column="3" value="${escapeAttr(exercise[3])}" placeholder="Carga, descanso, ajuste..." /></td>
+      <td><input data-column="3" value="${escapeAttr(exercise[3])}" placeholder="Ex.: 60 seg" /></td>
+      <td><input data-column="4" value="${escapeAttr(exercise[4])}" placeholder="Carga, ajuste..." /></td>
       <td>
         <div class="row-actions">
           <button class="icon-button" data-action="move-up" type="button" title="Mover para cima" ${exerciseIndex === 0 ? "disabled" : ""}>
@@ -840,7 +842,7 @@ function normalizeState() {
     title: workout.title || "Treino sem titulo",
     profile: workout.profile || "personalizado",
     notes: workout.notes || "",
-    days: clone(workout.days || initialDays),
+    days: normalizeDays(workout.days || initialDays),
     updatedAt: workout.updatedAt || "",
   }));
   state.profile ||= "personalizado";
@@ -849,13 +851,23 @@ function normalizeState() {
     day.name ||= "01";
     day.focus ||= "Personalizado";
     day.exercises ||= [];
-    day.exercises = day.exercises.map((exercise) => [
-      exercise[0] || "",
-      exercise[1] || "3",
-      exercise[2] || "12",
-      exercise[3] || "",
-    ]);
+    day.exercises = day.exercises.map(normalizeExercise);
   });
+}
+
+function normalizeDays(days) {
+  return clone(days).map((day) => ({
+    ...day,
+    exercises: (day.exercises || []).map(normalizeExercise),
+  }));
+}
+
+function normalizeExercise(exercise) {
+  if (exercise.length >= 5) {
+    return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", exercise[3] || "", exercise[4] || ""];
+  }
+
+  return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", "", exercise[3] || ""];
 }
 
 function getExerciseCatalog() {
@@ -1090,7 +1102,7 @@ async function downloadDocx() {
 function buildExerciseTable(day, api) {
   const { AlignmentType, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, BorderStyle } = api;
   const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
-  const columnWidths = [7, 41, 13, 15, 24];
+  const columnWidths = [6, 34, 11, 13, 13, 23];
   const headerCell = (text, width) =>
     new TableCell({
       borders: { top: border, bottom: border, left: border, right: border },
@@ -1121,7 +1133,7 @@ function buildExerciseTable(day, api) {
     rows: [
       new TableRow({
         tableHeader: true,
-        children: ["#", "EXERCICIO", "SERIES", "REPETICOES", "CARGA/OBS."].map((text, index) =>
+        children: ["#", "EXERCICIO", "SERIES", "REPETICOES", "DESCANSO", "CARGA/OBS."].map((text, index) =>
           headerCell(text, columnWidths[index]),
         ),
       }),
@@ -1133,7 +1145,8 @@ function buildExerciseTable(day, api) {
               cell(exercise[0], columnWidths[1], AlignmentType.LEFT),
               cell(exercise[1], columnWidths[2], AlignmentType.CENTER),
               cell(exercise[2], columnWidths[3], AlignmentType.CENTER),
-              cell(exercise[3], columnWidths[4], AlignmentType.LEFT),
+              cell(exercise[3], columnWidths[4], AlignmentType.CENTER),
+              cell(exercise[4], columnWidths[5], AlignmentType.LEFT),
             ],
           }),
       ),
