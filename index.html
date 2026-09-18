@@ -113,6 +113,41 @@
             <textarea id="generalNotes" rows="4" placeholder="Ex.: 3x entre 10 a 15 repeticoes"></textarea>
           </label>
         </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <i data-lucide="dumbbell"></i>
+            <h2>Biblioteca</h2>
+          </div>
+
+          <label>
+            Exercicio cadastrado
+            <select id="libraryExerciseSelect">
+              <option value="">Novo exercicio</option>
+            </select>
+          </label>
+
+          <label>
+            Nome do exercicio
+            <input id="libraryExerciseName" type="text" placeholder="Ex.: SUPINO RETO" />
+          </label>
+
+          <div class="inline-actions">
+            <button id="newExerciseBtn" class="secondary" type="button">
+              <i data-lucide="plus"></i>
+              Novo
+            </button>
+            <button id="saveExerciseBtn" class="secondary" type="button">
+              <i data-lucide="save"></i>
+              Salvar
+            </button>
+          </div>
+
+          <button id="deleteExerciseBtn" class="danger full-action" type="button">
+            <i data-lucide="trash-2"></i>
+            Excluir exercicio
+          </button>
+        </section>
       </aside>
 
       <main class="workspace">

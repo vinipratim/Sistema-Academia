@@ -1,6 +1,6 @@
 const STORAGE_KEY = "sistema-treinos-v2";
 
-const exerciseCatalog = [
+const defaultExerciseCatalog = [
   "MOBILIDADE DE QUADRIL",
   "SUPINO INCLINADO",
   "VOADOR",
@@ -107,6 +107,7 @@ const initialDays = [
 let state = loadState() || {
   students: [],
   savedWorkouts: [],
+  exerciseCatalog: clone(defaultExerciseCatalog),
   selectedStudentId: "",
   selectedWorkoutId: "",
   studentName: "",
@@ -137,6 +138,11 @@ const elements = {
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
   generalNotes: document.querySelector("#generalNotes"),
+  libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
+  libraryExerciseName: document.querySelector("#libraryExerciseName"),
+  newExerciseBtn: document.querySelector("#newExerciseBtn"),
+  saveExerciseBtn: document.querySelector("#saveExerciseBtn"),
+  deleteExerciseBtn: document.querySelector("#deleteExerciseBtn"),
   screenTitle: document.querySelector("#screenTitle"),
   dayTabs: document.querySelector("#dayTabs"),
   daysContainer: document.querySelector("#daysContainer"),
@@ -248,6 +254,19 @@ function bindStaticEvents() {
     state.notes = event.target.value;
     persist();
   });
+
+  elements.libraryExerciseSelect.addEventListener("change", (event) => {
+    elements.libraryExerciseName.value = event.target.value;
+  });
+
+  elements.newExerciseBtn.addEventListener("click", () => {
+    elements.libraryExerciseSelect.value = "";
+    elements.libraryExerciseName.value = "";
+    elements.libraryExerciseName.focus();
+  });
+
+  elements.saveExerciseBtn.addEventListener("click", saveLibraryExercise);
+  elements.deleteExerciseBtn.addEventListener("click", deleteLibraryExercise);
 
   elements.addDayBtn.addEventListener("click", addDay);
   elements.increaseDayBtn.addEventListener("click", addDay);
@@ -361,6 +380,71 @@ function selectWorkout(workoutId) {
   persist();
 }
 
+function saveLibraryExercise() {
+  const previousName = elements.libraryExerciseSelect.value;
+  const nextName = normalizeExerciseName(elements.libraryExerciseName.value);
+
+  if (!nextName) {
+    toast("Informe o nome do exercicio.");
+    return;
+  }
+
+  if (previousName && previousName !== nextName) {
+    state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== previousName);
+    replaceExerciseName(previousName, nextName);
+  }
+
+  if (!state.exerciseCatalog.includes(nextName)) {
+    state.exerciseCatalog.push(nextName);
+  }
+
+  state.exerciseCatalog.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  render();
+  elements.libraryExerciseSelect.value = nextName;
+  elements.libraryExerciseName.value = nextName;
+  persist();
+  toast("Exercicio salvo.");
+}
+
+function deleteLibraryExercise() {
+  const exerciseName = elements.libraryExerciseSelect.value;
+
+  if (!exerciseName) {
+    toast("Selecione um exercicio para excluir.");
+    return;
+  }
+
+  state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== exerciseName);
+  render();
+  elements.libraryExerciseName.value = "";
+  persist();
+  toast("Exercicio excluido da biblioteca.");
+}
+
+function replaceExerciseName(previousName, nextName) {
+  state.days.forEach((day) => {
+    day.exercises.forEach((exercise) => {
+      if (exercise[0] === previousName) {
+        exercise[0] = nextName;
+      }
+    });
+  });
+
+  state.savedWorkouts.forEach((workout) => {
+    workout.days.forEach((day) => {
+      day.exercises.forEach((exercise) => {
+        if (exercise[0] === previousName) {
+          exercise[0] = nextName;
+        }
+      });
+    });
+  });
+}
+
+function normalizeExerciseName(value) {
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function addDay() {
   state.days.push({
     name: String(state.days.length + 1).padStart(2, "0"),
@@ -375,6 +459,7 @@ function addDay() {
 function render() {
   normalizeState();
   renderStudentSelect();
+  renderLibraryExerciseSelect();
   elements.studentSelect.value = state.selectedStudentId || "";
   elements.studentName.value = state.studentName;
   elements.studentContact.value = state.studentContact;
@@ -420,6 +505,17 @@ function renderWorkoutSelect() {
       option.textContent = workout.title;
       elements.workoutSelect.append(option);
     });
+}
+
+function renderLibraryExerciseSelect() {
+  elements.libraryExerciseSelect.innerHTML = '<option value="">Novo exercicio</option>';
+
+  state.exerciseCatalog.forEach((exercise) => {
+    const option = document.createElement("option");
+    option.value = exercise;
+    option.textContent = exercise;
+    elements.libraryExerciseSelect.append(option);
+  });
 }
 
 function renderTabs() {
@@ -521,6 +617,8 @@ function renderDays() {
 }
 
 function renderExerciseRows(tbody, day) {
+  const exerciseCatalog = getExerciseCatalog();
+
   day.exercises.forEach((exercise, exerciseIndex) => {
     const selectedExercise = exercise[0] || "";
     const customExercise = selectedExercise && !exerciseCatalog.includes(selectedExercise);
@@ -597,6 +695,12 @@ function renderExerciseRows(tbody, day) {
 function normalizeState() {
   state.students ||= [];
   state.savedWorkouts ||= [];
+  if (!Array.isArray(state.exerciseCatalog) || !state.exerciseCatalog.length) {
+    state.exerciseCatalog = clone(defaultExerciseCatalog);
+  }
+  state.exerciseCatalog = [...new Set(state.exerciseCatalog.map(normalizeExerciseName).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR"),
+  );
   state.selectedStudentId ||= "";
   state.selectedWorkoutId ||= "";
   state.studentContact ||= "";
@@ -631,6 +735,10 @@ function normalizeState() {
       exercise[3] || "",
     ]);
   });
+}
+
+function getExerciseCatalog() {
+  return state.exerciseCatalog?.length ? state.exerciseCatalog : defaultExerciseCatalog;
 }
 
 function buildOptions(options, selectedValue) {
