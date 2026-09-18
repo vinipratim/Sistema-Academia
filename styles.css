@@ -373,6 +373,10 @@ select:focus {
   border-bottom: 1px solid var(--line);
 }
 
+.day-notes {
+  grid-column: 1 / -1;
+}
+
 .exercise-table {
   width: 100%;
   border-collapse: collapse;

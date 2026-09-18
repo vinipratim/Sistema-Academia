@@ -854,6 +854,7 @@ function renderPreviewDay(day) {
   return `
     <section class="preview-day">
       <h3>Dia ${escapeHtml(day.name)}${escapeHtml(focus)}</h3>
+      ${day.notes ? `<p>${escapeHtml(day.notes)}</p>` : ""}
       <table>
         <thead>
           <tr>
@@ -958,6 +959,10 @@ function renderDays() {
           <i data-lucide="trash-2"></i>
           Remover
         </button>
+        <label class="day-notes">
+          Observacoes do dia
+          <textarea data-field="notes" rows="2" placeholder="Orientacoes especificas deste dia">${escapeHtml(day.notes || "")}</textarea>
+        </label>
       </div>
       <table class="exercise-table">
         <thead>
@@ -987,7 +992,8 @@ function renderDays() {
     `;
 
     card.querySelectorAll("[data-field]").forEach((input) => {
-      input.addEventListener("change", (event) => {
+      const eventName = input.tagName === "TEXTAREA" ? "input" : "change";
+      input.addEventListener(eventName, (event) => {
         day[event.target.dataset.field] = event.target.value;
         if (event.target.dataset.field === "focus") {
           render();
@@ -1227,6 +1233,7 @@ function normalizeState() {
   state.days.forEach((day) => {
     day.name ||= "01";
     day.focus ||= "Personalizado";
+    day.notes ||= "";
     day.exercises ||= [];
     day.exercises = day.exercises.map(normalizeExercise);
   });
@@ -1235,6 +1242,7 @@ function normalizeState() {
 function normalizeDays(days) {
   return clone(days).map((day) => ({
     ...day,
+    notes: day.notes || "",
     exercises: (day.exercises || []).map(normalizeExercise),
   }));
 }
@@ -1555,6 +1563,14 @@ async function downloadDocx() {
           }),
         ],
       }),
+      ...(day.notes
+        ? [
+            new Paragraph({
+              spacing: { after: 80 },
+              children: [new TextRun({ text: day.notes })],
+            }),
+          ]
+        : []),
       buildExerciseTable(day, docxApi),
     );
   });
