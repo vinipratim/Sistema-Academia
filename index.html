@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Treinos</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">ST</div>
+          <div>
+            <h1>Sistema de Treinos</h1>
+            <p>Monte, revise e gere treinos em Word.</p>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-title">
+            <i data-lucide="user-round"></i>
+            <h2>Dados</h2>
+          </div>
+
+          <label>
+            Aluno
+            <input id="studentName" type="text" placeholder="Nome do aluno" />
+          </label>
+
+          <label>
+            Professor
+            <input id="teacherName" type="text" placeholder="Nome do professor" />
+          </label>
+
+          <label>
+            Titulo do treino
+            <input id="workoutTitle" type="text" placeholder="Ex.: Treino masculino 5 dias" />
+          </label>
+
+          <label>
+            Divisao
+            <select id="workoutProfile">
+              <option value="personalizado">Personalizado</option>
+              <option value="3-dias">3 dias</option>
+              <option value="5-dias">5 dias</option>
+              <option value="superiores-inferiores">Superiores / inferiores</option>
+              <option value="abc">ABC</option>
+            </select>
+          </label>
+
+          <label>
+            Observacoes gerais
+            <textarea id="generalNotes" rows="4" placeholder="Ex.: 3x entre 10 a 15 repeticoes"></textarea>
+          </label>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Editor</p>
+            <h2 id="screenTitle">Treino sem titulo</h2>
+          </div>
+          <div class="topbar-actions">
+            <button id="addDayBtn" class="secondary" type="button">
+              <i data-lucide="calendar-plus"></i>
+              Dia
+            </button>
+            <button id="saveBtn" class="secondary" type="button" title="Salvar no navegador">
+              <i data-lucide="save"></i>
+              Salvar
+            </button>
+            <button id="downloadBtn" class="primary" type="button">
+              <i data-lucide="download"></i>
+              DOCX
+            </button>
+          </div>
+        </header>
+
+        <section class="day-nav" aria-label="Dias do treino">
+          <div class="day-tabs" id="dayTabs"></div>
+          <button id="increaseDayBtn" class="secondary compact-action" type="button">
+            <i data-lucide="plus"></i>
+            Dia
+          </button>
+        </section>
+        <section class="editor-grid" id="daysContainer"></section>
+      </main>
+    </div>
+  </body>
+</html>
