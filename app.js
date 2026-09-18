@@ -121,6 +121,7 @@ let state = loadState() || {
   profile: "personalizado",
   notes: "3X ENTRE 10 A 15 REPETICOES",
   activeDay: 0,
+  showPreview: false,
   days: clone(initialDays),
 };
 
@@ -153,7 +154,9 @@ const elements = {
   addDayBtn: document.querySelector("#addDayBtn"),
   increaseDayBtn: document.querySelector("#increaseDayBtn"),
   saveBtn: document.querySelector("#saveBtn"),
+  previewBtn: document.querySelector("#previewBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
+  previewPanel: document.querySelector("#previewPanel"),
 };
 
 function clone(value) {
@@ -282,6 +285,12 @@ function bindStaticEvents() {
   elements.saveBtn.addEventListener("click", () => {
     persist();
     toast("Treino salvo no navegador.");
+  });
+
+  elements.previewBtn.addEventListener("click", () => {
+    state.showPreview = !state.showPreview;
+    render();
+    persist();
   });
 
   elements.downloadBtn.addEventListener("click", downloadDocx);
@@ -518,6 +527,7 @@ function render() {
 
   renderTabs();
   renderDays();
+  renderPreview();
   window.lucide?.createIcons();
 }
 
@@ -548,6 +558,68 @@ function renderWorkoutSelect() {
       option.textContent = workout.title;
       elements.workoutSelect.append(option);
     });
+}
+
+function renderPreview() {
+  elements.previewPanel.hidden = !state.showPreview;
+
+  if (!state.showPreview) {
+    elements.previewPanel.innerHTML = "";
+    return;
+  }
+
+  elements.previewPanel.innerHTML = `
+    <div class="preview-header">
+      <p class="eyebrow">Preview DOCX</p>
+      <h2>${escapeHtml(state.title || "Treino")}</h2>
+      <p><strong>Aluno:</strong> ${escapeHtml(state.studentName || "-")}</p>
+      <p><strong>Professor:</strong> ${escapeHtml(state.teacherName || "-")}</p>
+      <p><strong>Divisao:</strong> ${escapeHtml(getProfileLabel(state.profile))}</p>
+      ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
+      ${state.notes ? `<p><strong>Observacoes:</strong> ${escapeHtml(state.notes)}</p>` : ""}
+    </div>
+    ${state.days.map(renderPreviewDay).join("")}
+  `;
+}
+
+function renderPreviewDay(day) {
+  const focus = day.focus && day.focus !== "Personalizado" ? ` - ${day.focus}` : "";
+
+  return `
+    <section class="preview-day">
+      <h3>Dia ${escapeHtml(day.name)}${escapeHtml(focus)}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Exercicio</th>
+            <th>Series</th>
+            <th>Reps</th>
+            <th>Descanso</th>
+            <th>Carga</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${day.exercises
+            .map(
+              (exercise, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(exercise[0])}</td>
+                  <td>${escapeHtml(exercise[1])}</td>
+                  <td>${escapeHtml(exercise[2])}</td>
+                  <td>${escapeHtml(exercise[3])}</td>
+                  <td>${escapeHtml(exercise[4])}</td>
+                  <td>${escapeHtml(exercise[5])}</td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </section>
+  `;
 }
 
 function renderLibraryExerciseSelect() {
@@ -828,6 +900,7 @@ function normalizeState() {
   });
   state.selectedStudentId ||= "";
   state.selectedWorkoutId ||= "";
+  state.showPreview ||= false;
   state.studentContact ||= "";
   state.studentGoal ||= "";
   state.studentNotes ||= "";
@@ -966,6 +1039,10 @@ function escapeAttr(value = "") {
     .replaceAll('"', "&quot;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+}
+
+function escapeHtml(value = "") {
+  return escapeAttr(value).replaceAll("'", "&#039;");
 }
 
 async function downloadDocx() {
