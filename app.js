@@ -70,6 +70,7 @@ const focusOptions = [
 const seriesOptions = ["1", "2", "3", "4", "5", "6", "BI-SET", "TRI-SET", "DROP-SET"];
 const repsOptions = ["6", "8", "10", "10 A 12", "12", "12 A 15", "15", "16", "20", "FALHA", "30 SEG", "45 SEG", "60 SEG"];
 const muscleGroups = ["Peito", "Costas", "Pernas", "Ombros", "Bracos", "Abdomen", "Gluteos", "Panturrilha", "Mobilidade", "Outros"];
+const equipmentOptions = ["Maquina", "Halter", "Barra", "Polia", "Peso corporal", "Cardio", "Livre", "Outros"];
 
 const initialDays = [
   {
@@ -116,6 +117,7 @@ let state = loadState() || {
   savedWorkouts: [],
   exerciseCatalog: clone(defaultExerciseCatalog),
   exerciseGroups: buildDefaultExerciseGroups(),
+  exerciseEquipment: buildDefaultExerciseEquipment(),
   selectedStudentId: "",
   selectedWorkoutId: "",
   studentName: "",
@@ -177,6 +179,7 @@ const elements = {
   libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
   libraryExerciseName: document.querySelector("#libraryExerciseName"),
   libraryExerciseGroup: document.querySelector("#libraryExerciseGroup"),
+  libraryExerciseEquipment: document.querySelector("#libraryExerciseEquipment"),
   newExerciseBtn: document.querySelector("#newExerciseBtn"),
   saveExerciseBtn: document.querySelector("#saveExerciseBtn"),
   deleteExerciseBtn: document.querySelector("#deleteExerciseBtn"),
@@ -443,6 +446,7 @@ function bindStaticEvents() {
     const exerciseName = event.target.value;
     elements.libraryExerciseName.value = exerciseName;
     elements.libraryExerciseGroup.value = state.exerciseGroups[exerciseName] || "Outros";
+    elements.libraryExerciseEquipment.value = state.exerciseEquipment[exerciseName] || "Outros";
   });
 
   elements.libraryExerciseSearch.addEventListener("input", () => {
@@ -453,6 +457,7 @@ function bindStaticEvents() {
     elements.libraryExerciseSelect.value = "";
     elements.libraryExerciseName.value = "";
     elements.libraryExerciseGroup.value = "Outros";
+    elements.libraryExerciseEquipment.value = "Outros";
     elements.libraryExerciseName.focus();
   });
 
@@ -638,6 +643,7 @@ function saveLibraryExercise() {
   const previousName = elements.libraryExerciseSelect.value;
   const nextName = normalizeExerciseName(elements.libraryExerciseName.value);
   const group = elements.libraryExerciseGroup.value || "Outros";
+  const equipment = elements.libraryExerciseEquipment.value || "Outros";
 
   if (!nextName) {
     toast("Informe o nome do exercicio.");
@@ -647,6 +653,7 @@ function saveLibraryExercise() {
   if (previousName && previousName !== nextName) {
     state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== previousName);
     delete state.exerciseGroups[previousName];
+    delete state.exerciseEquipment[previousName];
     replaceExerciseName(previousName, nextName);
   }
 
@@ -656,10 +663,12 @@ function saveLibraryExercise() {
 
   state.exerciseCatalog.sort((a, b) => a.localeCompare(b, "pt-BR"));
   state.exerciseGroups[nextName] = group;
+  state.exerciseEquipment[nextName] = equipment;
   render();
   elements.libraryExerciseSelect.value = nextName;
   elements.libraryExerciseName.value = nextName;
   elements.libraryExerciseGroup.value = group;
+  elements.libraryExerciseEquipment.value = equipment;
   persist();
   toast("Exercicio salvo.");
 }
@@ -674,9 +683,11 @@ function deleteLibraryExercise() {
 
   state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== exerciseName);
   delete state.exerciseGroups[exerciseName];
+  delete state.exerciseEquipment[exerciseName];
   render();
   elements.libraryExerciseName.value = "";
   elements.libraryExerciseGroup.value = "Outros";
+  elements.libraryExerciseEquipment.value = "Outros";
   persist();
   toast("Exercicio excluido da biblioteca.");
 }
@@ -882,11 +893,17 @@ function renderLibraryExerciseSelect() {
   const search = elements.libraryExerciseSearch.value.trim().toUpperCase();
 
   state.exerciseCatalog
-    .filter((exercise) => !search || exercise.includes(search) || (state.exerciseGroups[exercise] || "").toUpperCase().includes(search))
+    .filter(
+      (exercise) =>
+        !search ||
+        exercise.includes(search) ||
+        (state.exerciseGroups[exercise] || "").toUpperCase().includes(search) ||
+        (state.exerciseEquipment[exercise] || "").toUpperCase().includes(search),
+    )
     .forEach((exercise) => {
     const option = document.createElement("option");
     option.value = exercise;
-    option.textContent = `${exercise} - ${state.exerciseGroups[exercise] || "Outros"}`;
+    option.textContent = `${exercise} - ${state.exerciseGroups[exercise] || "Outros"} - ${state.exerciseEquipment[exercise] || "Outros"}`;
     elements.libraryExerciseSelect.append(option);
     });
 }
@@ -1151,9 +1168,16 @@ function normalizeState() {
     ...buildDefaultExerciseGroups(),
     ...(state.exerciseGroups || {}),
   };
+  state.exerciseEquipment = {
+    ...buildDefaultExerciseEquipment(),
+    ...(state.exerciseEquipment || {}),
+  };
   state.exerciseCatalog.forEach((exercise) => {
     if (!muscleGroups.includes(state.exerciseGroups[exercise])) {
       state.exerciseGroups[exercise] = inferMuscleGroup(exercise);
+    }
+    if (!equipmentOptions.includes(state.exerciseEquipment[exercise])) {
+      state.exerciseEquipment[exercise] = inferEquipment(exercise);
     }
   });
   state.selectedStudentId ||= "";
@@ -1273,6 +1297,10 @@ function buildDefaultExerciseGroups() {
   return Object.fromEntries(defaultExerciseCatalog.map((exercise) => [exercise, inferMuscleGroup(exercise)]));
 }
 
+function buildDefaultExerciseEquipment() {
+  return Object.fromEntries(defaultExerciseCatalog.map((exercise) => [exercise, inferEquipment(exercise)]));
+}
+
 function inferMuscleGroup(exerciseName) {
   const name = exerciseName.toUpperCase();
 
@@ -1295,6 +1323,19 @@ function inferMuscleGroup(exerciseName) {
   ) {
     return "Pernas";
   }
+
+  return "Outros";
+}
+
+function inferEquipment(exerciseName) {
+  const name = exerciseName.toUpperCase();
+
+  if (name.includes("HALTER")) return "Halter";
+  if (name.includes("BARRA")) return "Barra";
+  if (name.includes("POLIA") || name.includes("PULLEY") || name.includes("CORDA")) return "Polia";
+  if (name.includes("PRANCHA") || name.includes("MERGULHO") || name.includes("ABDOMINAL")) return "Peso corporal";
+  if (name.includes("MAQUINA") || name.includes("HACK") || name.includes("LEG") || name.includes("CADEIRA") || name.includes("MESA")) return "Maquina";
+  if (name.includes("MOBILIDADE")) return "Livre";
 
   return "Outros";
 }
