@@ -132,6 +132,8 @@ let state = loadState() || {
   profile: "personalizado",
   docxLayout: "simples",
   workoutStatus: "rascunho",
+  workoutStartDate: "",
+  workoutEndDate: "",
   notes: "3X ENTRE 10 A 15 REPETICOES",
   activeDay: 0,
   showPreview: false,
@@ -161,6 +163,8 @@ const elements = {
   workoutProfile: document.querySelector("#workoutProfile"),
   docxLayout: document.querySelector("#docxLayout"),
   workoutStatus: document.querySelector("#workoutStatus"),
+  workoutStartDate: document.querySelector("#workoutStartDate"),
+  workoutEndDate: document.querySelector("#workoutEndDate"),
   workoutSelect: document.querySelector("#workoutSelect"),
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
@@ -403,6 +407,16 @@ function bindStaticEvents() {
     persist();
   });
 
+  elements.workoutStartDate.addEventListener("input", (event) => {
+    state.workoutStartDate = event.target.value;
+    persist();
+  });
+
+  elements.workoutEndDate.addEventListener("input", (event) => {
+    state.workoutEndDate = event.target.value;
+    persist();
+  });
+
   elements.workoutSelect.addEventListener("change", (event) => {
     selectWorkout(event.target.value);
   });
@@ -510,6 +524,8 @@ function newWorkout() {
   state.profile = "personalizado";
   state.docxLayout = "simples";
   state.workoutStatus = "rascunho";
+  state.workoutStartDate = "";
+  state.workoutEndDate = "";
   state.notes = "3X ENTRE 10 A 15 REPETICOES";
   state.activeDay = 0;
   state.days = clone(initialDays);
@@ -530,6 +546,8 @@ function saveWorkout() {
     profile: state.profile,
     docxLayout: state.docxLayout,
     status: state.workoutStatus,
+    startDate: state.workoutStartDate,
+    endDate: state.workoutEndDate,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -562,6 +580,8 @@ function duplicateWorkout() {
     profile: state.profile,
     docxLayout: state.docxLayout,
     status: state.workoutStatus,
+    startDate: state.workoutStartDate,
+    endDate: state.workoutEndDate,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -573,6 +593,8 @@ function duplicateWorkout() {
     state.profile = workout.profile;
     state.docxLayout = workout.docxLayout || "simples";
     state.workoutStatus = workout.status || "rascunho";
+    state.workoutStartDate = workout.startDate || "";
+    state.workoutEndDate = workout.endDate || "";
     state.notes = workout.notes;
   state.days = clone(workout.days);
   state.activeDay = 0;
@@ -698,6 +720,8 @@ function render() {
   elements.workoutProfile.value = state.profile || "personalizado";
   elements.docxLayout.value = state.docxLayout || "simples";
   elements.workoutStatus.value = state.workoutStatus || "rascunho";
+  elements.workoutStartDate.value = state.workoutStartDate;
+  elements.workoutEndDate.value = state.workoutEndDate;
   renderWorkoutSelect();
   renderWorkoutHistory();
   elements.workoutSelect.value = state.selectedWorkoutId || "";
@@ -782,6 +806,8 @@ function renderPreview() {
       <p><strong>Professor:</strong> ${escapeHtml(state.teacherName || "-")}</p>
       <p><strong>Divisao:</strong> ${escapeHtml(getProfileLabel(state.profile))}</p>
       <p><strong>Status:</strong> ${escapeHtml(getWorkoutStatusLabel(state.workoutStatus))}</p>
+      ${state.workoutStartDate ? `<p><strong>Inicio:</strong> ${escapeHtml(formatDate(state.workoutStartDate))}</p>` : ""}
+      ${state.workoutEndDate ? `<p><strong>Fim:</strong> ${escapeHtml(formatDate(state.workoutEndDate))}</p>` : ""}
       ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
       ${state.studentWeight ? `<p><strong>Peso:</strong> ${escapeHtml(state.studentWeight)}</p>` : ""}
       ${state.studentHeight ? `<p><strong>Altura:</strong> ${escapeHtml(state.studentHeight)}</p>` : ""}
@@ -1140,6 +1166,8 @@ function normalizeState() {
     profile: workout.profile || "personalizado",
     docxLayout: workout.docxLayout || "simples",
     status: workout.status || "rascunho",
+    startDate: workout.startDate || "",
+    endDate: workout.endDate || "",
     notes: workout.notes || "",
     days: normalizeDays(workout.days || initialDays),
     updatedAt: workout.updatedAt || "",
@@ -1147,6 +1175,8 @@ function normalizeState() {
   state.profile ||= "personalizado";
   state.docxLayout ||= "simples";
   state.workoutStatus ||= "rascunho";
+  state.workoutStartDate ||= "";
+  state.workoutEndDate ||= "";
   state.days ||= clone(initialDays);
   state.days.forEach((day) => {
     day.name ||= "01";
@@ -1312,6 +1342,21 @@ function buildStudentAssessmentParagraphs(Paragraph, TextRun, layout) {
   );
 }
 
+function buildWorkoutPeriodParagraphs(Paragraph, TextRun) {
+  const lines = [
+    ["Inicio", formatDate(state.workoutStartDate)],
+    ["Fim", formatDate(state.workoutEndDate)],
+  ].filter(([, value]) => value);
+
+  return lines.map(
+    ([label, value]) =>
+      new Paragraph({
+        spacing: { after: 80 },
+        children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun(value)],
+      }),
+  );
+}
+
 async function downloadDocx() {
   if (!window.docx) {
     toast("A biblioteca de DOCX ainda nao carregou. Tente novamente em alguns segundos.");
@@ -1396,6 +1441,7 @@ async function downloadDocx() {
         new TextRun(getWorkoutStatusLabel(state.workoutStatus)),
       ],
     }),
+    ...buildWorkoutPeriodParagraphs(Paragraph, TextRun),
   ];
 
   if (state.notes.trim()) {
