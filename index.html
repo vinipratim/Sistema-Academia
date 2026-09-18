@@ -27,9 +27,47 @@
           </div>
 
           <label>
-            Aluno
+            Aluno cadastrado
+            <select id="studentSelect">
+              <option value="">Selecionar aluno</option>
+            </select>
+          </label>
+
+          <div class="inline-actions">
+            <button id="newStudentBtn" class="secondary" type="button">
+              <i data-lucide="user-plus"></i>
+              Novo
+            </button>
+            <button id="saveStudentBtn" class="secondary" type="button">
+              <i data-lucide="save"></i>
+              Salvar aluno
+            </button>
+          </div>
+
+          <label>
+            Nome do aluno
             <input id="studentName" type="text" placeholder="Nome do aluno" />
           </label>
+
+          <label>
+            Contato
+            <input id="studentContact" type="text" placeholder="Telefone ou WhatsApp" />
+          </label>
+
+          <label>
+            Objetivo
+            <input id="studentGoal" type="text" placeholder="Ex.: Hipertrofia, emagrecimento..." />
+          </label>
+
+          <label>
+            Observacoes do aluno
+            <textarea id="studentNotes" rows="3" placeholder="Restricoes, preferencias, historico..."></textarea>
+          </label>
+
+          <button id="deleteStudentBtn" class="danger full-action" type="button">
+            <i data-lucide="trash-2"></i>
+            Excluir aluno
+          </button>
 
           <label>
             Professor

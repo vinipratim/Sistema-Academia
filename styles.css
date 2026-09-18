@@ -174,6 +174,18 @@ select:focus {
   gap: 10px;
 }
 
+.inline-actions {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.full-action {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
 .primary,
 .secondary,
 .ghost,
@@ -408,6 +420,10 @@ select:focus {
   .topbar-actions button,
   .day-footer button {
     flex: 1;
+  }
+
+  .inline-actions {
+    grid-template-columns: 1fr;
   }
 
   .day-nav {
