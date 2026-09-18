@@ -63,6 +63,7 @@ const focusOptions = [
 
 const seriesOptions = ["1", "2", "3", "4", "5", "6"];
 const repsOptions = ["8", "10", "12", "15", "16", "20", "30 SEG", "45 SEG", "60 SEG"];
+const muscleGroups = ["Peito", "Costas", "Pernas", "Ombros", "Bracos", "Abdomen", "Gluteos", "Panturrilha", "Mobilidade", "Outros"];
 
 const initialDays = [
   {
@@ -108,6 +109,7 @@ let state = loadState() || {
   students: [],
   savedWorkouts: [],
   exerciseCatalog: clone(defaultExerciseCatalog),
+  exerciseGroups: buildDefaultExerciseGroups(),
   selectedStudentId: "",
   selectedWorkoutId: "",
   studentName: "",
@@ -140,6 +142,7 @@ const elements = {
   generalNotes: document.querySelector("#generalNotes"),
   libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
   libraryExerciseName: document.querySelector("#libraryExerciseName"),
+  libraryExerciseGroup: document.querySelector("#libraryExerciseGroup"),
   newExerciseBtn: document.querySelector("#newExerciseBtn"),
   saveExerciseBtn: document.querySelector("#saveExerciseBtn"),
   deleteExerciseBtn: document.querySelector("#deleteExerciseBtn"),
@@ -256,12 +259,15 @@ function bindStaticEvents() {
   });
 
   elements.libraryExerciseSelect.addEventListener("change", (event) => {
-    elements.libraryExerciseName.value = event.target.value;
+    const exerciseName = event.target.value;
+    elements.libraryExerciseName.value = exerciseName;
+    elements.libraryExerciseGroup.value = state.exerciseGroups[exerciseName] || "Outros";
   });
 
   elements.newExerciseBtn.addEventListener("click", () => {
     elements.libraryExerciseSelect.value = "";
     elements.libraryExerciseName.value = "";
+    elements.libraryExerciseGroup.value = "Outros";
     elements.libraryExerciseName.focus();
   });
 
@@ -383,6 +389,7 @@ function selectWorkout(workoutId) {
 function saveLibraryExercise() {
   const previousName = elements.libraryExerciseSelect.value;
   const nextName = normalizeExerciseName(elements.libraryExerciseName.value);
+  const group = elements.libraryExerciseGroup.value || "Outros";
 
   if (!nextName) {
     toast("Informe o nome do exercicio.");
@@ -391,6 +398,7 @@ function saveLibraryExercise() {
 
   if (previousName && previousName !== nextName) {
     state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== previousName);
+    delete state.exerciseGroups[previousName];
     replaceExerciseName(previousName, nextName);
   }
 
@@ -399,9 +407,11 @@ function saveLibraryExercise() {
   }
 
   state.exerciseCatalog.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  state.exerciseGroups[nextName] = group;
   render();
   elements.libraryExerciseSelect.value = nextName;
   elements.libraryExerciseName.value = nextName;
+  elements.libraryExerciseGroup.value = group;
   persist();
   toast("Exercicio salvo.");
 }
@@ -415,8 +425,10 @@ function deleteLibraryExercise() {
   }
 
   state.exerciseCatalog = state.exerciseCatalog.filter((exercise) => exercise !== exerciseName);
+  delete state.exerciseGroups[exerciseName];
   render();
   elements.libraryExerciseName.value = "";
+  elements.libraryExerciseGroup.value = "Outros";
   persist();
   toast("Exercicio excluido da biblioteca.");
 }
@@ -513,7 +525,7 @@ function renderLibraryExerciseSelect() {
   state.exerciseCatalog.forEach((exercise) => {
     const option = document.createElement("option");
     option.value = exercise;
-    option.textContent = exercise;
+    option.textContent = `${exercise} - ${state.exerciseGroups[exercise] || "Outros"}`;
     elements.libraryExerciseSelect.append(option);
   });
 }
@@ -701,6 +713,15 @@ function normalizeState() {
   state.exerciseCatalog = [...new Set(state.exerciseCatalog.map(normalizeExerciseName).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
+  state.exerciseGroups = {
+    ...buildDefaultExerciseGroups(),
+    ...(state.exerciseGroups || {}),
+  };
+  state.exerciseCatalog.forEach((exercise) => {
+    if (!muscleGroups.includes(state.exerciseGroups[exercise])) {
+      state.exerciseGroups[exercise] = inferMuscleGroup(exercise);
+    }
+  });
   state.selectedStudentId ||= "";
   state.selectedWorkoutId ||= "";
   state.studentContact ||= "";
@@ -739,6 +760,36 @@ function normalizeState() {
 
 function getExerciseCatalog() {
   return state.exerciseCatalog?.length ? state.exerciseCatalog : defaultExerciseCatalog;
+}
+
+function buildDefaultExerciseGroups() {
+  return Object.fromEntries(defaultExerciseCatalog.map((exercise) => [exercise, inferMuscleGroup(exercise)]));
+}
+
+function inferMuscleGroup(exerciseName) {
+  const name = exerciseName.toUpperCase();
+
+  if (name.includes("MOBILIDADE")) return "Mobilidade";
+  if (name.includes("SUPINO") || name.includes("VOADOR")) return "Peito";
+  if (name.includes("PUXADA") || name.includes("REMADA") || name.includes("CRUCIFIXO INVERTIDO")) return "Costas";
+  if (name.includes("DESENVOLVIMENTO") || name.includes("ELEVACAO LATERAL")) return "Ombros";
+  if (name.includes("TRICEPS") || name.includes("ROSCA") || name.includes("SCOTH")) return "Bracos";
+  if (name.includes("ABDOMINAL") || name.includes("PRANCHA") || name.includes("ELEVACAO DE PERNAS")) return "Abdomen";
+  if (name.includes("GLUTEO") || name.includes("PELVICA") || name.includes("COICE") || name.includes("ABDUTORA")) return "Gluteos";
+  if (name.includes("PANTURRILHA")) return "Panturrilha";
+  if (
+    name.includes("AGACHAMENTO") ||
+    name.includes("LEG") ||
+    name.includes("AFUNDO") ||
+    name.includes("EXTENSORA") ||
+    name.includes("FLEXORA") ||
+    name.includes("ADUTORA") ||
+    name.includes("STIF")
+  ) {
+    return "Pernas";
+  }
+
+  return "Outros";
 }
 
 function buildOptions(options, selectedValue) {
