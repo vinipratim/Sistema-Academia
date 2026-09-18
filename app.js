@@ -106,7 +106,9 @@ const initialDays = [
 
 let state = loadState() || {
   students: [],
+  savedWorkouts: [],
   selectedStudentId: "",
+  selectedWorkoutId: "",
   studentName: "",
   studentContact: "",
   studentGoal: "",
@@ -131,6 +133,9 @@ const elements = {
   teacherName: document.querySelector("#teacherName"),
   workoutTitle: document.querySelector("#workoutTitle"),
   workoutProfile: document.querySelector("#workoutProfile"),
+  workoutSelect: document.querySelector("#workoutSelect"),
+  newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
+  saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
   generalNotes: document.querySelector("#generalNotes"),
   screenTitle: document.querySelector("#screenTitle"),
   dayTabs: document.querySelector("#dayTabs"),
@@ -232,6 +237,13 @@ function bindStaticEvents() {
     persist();
   });
 
+  elements.workoutSelect.addEventListener("change", (event) => {
+    selectWorkout(event.target.value);
+  });
+
+  elements.newWorkoutBtn.addEventListener("click", newWorkout);
+  elements.saveWorkoutBtn.addEventListener("click", saveWorkout);
+
   elements.generalNotes.addEventListener("input", (event) => {
     state.notes = event.target.value;
     persist();
@@ -251,6 +263,7 @@ function bindStaticEvents() {
 function selectStudent(studentId) {
   const student = state.students.find((item) => item.id === studentId);
   state.selectedStudentId = studentId;
+  state.selectedWorkoutId = "";
 
   if (student) {
     state.studentName = student.name;
@@ -292,6 +305,62 @@ function saveStudent() {
   toast("Aluno salvo.");
 }
 
+function newWorkout() {
+  state.selectedWorkoutId = "";
+  state.title = "Treino personalizado";
+  state.profile = "personalizado";
+  state.notes = "3X ENTRE 10 A 15 REPETICOES";
+  state.activeDay = 0;
+  state.days = clone(initialDays);
+  render();
+  persist();
+}
+
+function saveWorkout() {
+  if (!state.selectedStudentId) {
+    toast("Selecione ou salve um aluno antes do treino.");
+    return;
+  }
+
+  const workout = {
+    id: state.selectedWorkoutId || createId(),
+    studentId: state.selectedStudentId,
+    title: state.title.trim() || "Treino sem titulo",
+    profile: state.profile,
+    notes: state.notes,
+    days: clone(state.days),
+    updatedAt: new Date().toISOString(),
+  };
+  const currentIndex = state.savedWorkouts.findIndex((item) => item.id === workout.id);
+
+  if (currentIndex >= 0) {
+    state.savedWorkouts[currentIndex] = workout;
+  } else {
+    state.savedWorkouts.push(workout);
+  }
+
+  state.selectedWorkoutId = workout.id;
+  render();
+  persist();
+  toast("Treino salvo para o aluno.");
+}
+
+function selectWorkout(workoutId) {
+  const workout = state.savedWorkouts.find((item) => item.id === workoutId);
+  state.selectedWorkoutId = workoutId;
+
+  if (workout) {
+    state.title = workout.title;
+    state.profile = workout.profile;
+    state.notes = workout.notes;
+    state.days = clone(workout.days);
+    state.activeDay = 0;
+  }
+
+  render();
+  persist();
+}
+
 function addDay() {
   state.days.push({
     name: String(state.days.length + 1).padStart(2, "0"),
@@ -314,6 +383,8 @@ function render() {
   elements.teacherName.value = state.teacherName;
   elements.workoutTitle.value = state.title;
   elements.workoutProfile.value = state.profile || "personalizado";
+  renderWorkoutSelect();
+  elements.workoutSelect.value = state.selectedWorkoutId || "";
   elements.generalNotes.value = state.notes;
   elements.screenTitle.textContent = state.title || "Treino sem titulo";
 
@@ -333,6 +404,21 @@ function renderStudentSelect() {
       option.value = student.id;
       option.textContent = student.name;
       elements.studentSelect.append(option);
+    });
+}
+
+function renderWorkoutSelect() {
+  elements.workoutSelect.innerHTML = '<option value="">Treino atual</option>';
+
+  state.savedWorkouts
+    .filter((workout) => workout.studentId === state.selectedStudentId)
+    .slice()
+    .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"))
+    .forEach((workout) => {
+      const option = document.createElement("option");
+      option.value = workout.id;
+      option.textContent = workout.title;
+      elements.workoutSelect.append(option);
     });
 }
 
@@ -510,7 +596,9 @@ function renderExerciseRows(tbody, day) {
 
 function normalizeState() {
   state.students ||= [];
+  state.savedWorkouts ||= [];
   state.selectedStudentId ||= "";
+  state.selectedWorkoutId ||= "";
   state.studentContact ||= "";
   state.studentGoal ||= "";
   state.studentNotes ||= "";
@@ -520,6 +608,15 @@ function normalizeState() {
     contact: student.contact || "",
     goal: student.goal || "",
     notes: student.notes || "",
+  }));
+  state.savedWorkouts = state.savedWorkouts.map((workout) => ({
+    id: workout.id || createId(),
+    studentId: workout.studentId || "",
+    title: workout.title || "Treino sem titulo",
+    profile: workout.profile || "personalizado",
+    notes: workout.notes || "",
+    days: clone(workout.days || initialDays),
+    updatedAt: workout.updatedAt || "",
   }));
   state.profile ||= "personalizado";
   state.days ||= clone(initialDays);
