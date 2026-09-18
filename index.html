@@ -10,6 +10,22 @@
     <script defer src="app.js"></script>
   </head>
   <body>
+    <section class="login-overlay" id="loginOverlay" hidden>
+      <form class="login-panel" id="loginForm">
+        <div class="brand-mark">ST</div>
+        <h1>Sistema de Treinos</h1>
+        <label>
+          Senha do professor
+          <input id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password" />
+        </label>
+        <button class="primary" type="submit">
+          <i data-lucide="log-in"></i>
+          Entrar
+        </button>
+        <p id="loginError" class="login-error"></p>
+      </form>
+    </section>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">

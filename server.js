@@ -1,8 +1,11 @@
 const http = require("http");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.PORT || 3000);
+const PROFESSOR_PASSWORD = process.env.PROFESSOR_PASSWORD || "admin123";
+const SESSION_TOKEN = crypto.randomBytes(32).toString("hex");
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const STATE_FILE = path.join(DATA_DIR, "app-state.json");
@@ -23,11 +26,24 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (request.url === "/api/login" && request.method === "POST") {
+      const body = await readBody(request);
+      const credentials = JSON.parse(body || "{}");
+
+      if (credentials.password === PROFESSOR_PASSWORD) {
+        return sendJson(response, { token: SESSION_TOKEN });
+      }
+
+      return sendJson(response, { error: "Senha invalida" }, 401);
+    }
+
     if (request.url === "/api/state" && request.method === "GET") {
+      if (!isAuthenticated(request)) return sendJson(response, { error: "Nao autenticado" }, 401);
       return sendJson(response, readState());
     }
 
     if (request.url === "/api/state" && request.method === "PUT") {
+      if (!isAuthenticated(request)) return sendJson(response, { error: "Nao autenticado" }, 401);
       const body = await readBody(request);
       const state = JSON.parse(body || "{}");
       fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
@@ -46,7 +62,13 @@ const server = http.createServer(async (request, response) => {
 
 server.listen(PORT, () => {
   console.log(`Sistema Academia em http://localhost:${PORT}`);
+  console.log("Senha do professor: use PROFESSOR_PASSWORD para alterar.");
 });
+
+function isAuthenticated(request) {
+  const authorization = request.headers.authorization || "";
+  return authorization === `Bearer ${SESSION_TOKEN}`;
+}
 
 function readState() {
   if (!fs.existsSync(STATE_FILE)) {

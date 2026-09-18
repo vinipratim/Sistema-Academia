@@ -1,7 +1,10 @@
 const STORAGE_KEY = "sistema-treinos-v2";
+const AUTH_TOKEN_KEY = "sistema-treinos-auth-token";
 const API_STATE_URL = "/api/state";
+const API_LOGIN_URL = "/api/login";
 let remotePersistenceAvailable = false;
 let persistTimer;
+let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || "";
 
 const defaultExerciseCatalog = [
   "MOBILIDADE DE QUADRIL",
@@ -131,6 +134,10 @@ let state = loadState() || {
 
 const elements = {
   studentSelect: document.querySelector("#studentSelect"),
+  loginOverlay: document.querySelector("#loginOverlay"),
+  loginForm: document.querySelector("#loginForm"),
+  loginPassword: document.querySelector("#loginPassword"),
+  loginError: document.querySelector("#loginError"),
   newStudentBtn: document.querySelector("#newStudentBtn"),
   saveStudentBtn: document.querySelector("#saveStudentBtn"),
   deleteStudentBtn: document.querySelector("#deleteStudentBtn"),
@@ -188,7 +195,12 @@ function persist() {
 
 async function hydrateRemoteState() {
   try {
-    const response = await fetch(API_STATE_URL);
+    const response = await fetch(API_STATE_URL, { headers: getAuthHeaders() });
+
+    if (response.status === 401) {
+      showLogin();
+      return;
+    }
 
     if (!response.ok) return;
 
@@ -212,15 +224,63 @@ function persistRemoteState() {
   persistTimer = setTimeout(() => {
     fetch(API_STATE_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify(state),
-    }).catch(() => {
-      remotePersistenceAvailable = false;
-    });
+    })
+      .then((response) => {
+        if (response.status === 401) {
+          remotePersistenceAvailable = false;
+          showLogin();
+        }
+      })
+      .catch(() => {
+        remotePersistenceAvailable = false;
+      });
   }, 350);
 }
 
+function getAuthHeaders() {
+  return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+}
+
+function showLogin(message = "") {
+  elements.loginOverlay.hidden = false;
+  elements.loginError.textContent = message;
+  elements.loginPassword.focus();
+}
+
+function hideLogin() {
+  elements.loginOverlay.hidden = true;
+  elements.loginPassword.value = "";
+  elements.loginError.textContent = "";
+}
+
 function bindStaticEvents() {
+  elements.loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    try {
+      const response = await fetch(API_LOGIN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: elements.loginPassword.value }),
+      });
+
+      if (!response.ok) {
+        showLogin("Senha invalida.");
+        return;
+      }
+
+      const data = await response.json();
+      authToken = data.token;
+      localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+      hideLogin();
+      hydrateRemoteState();
+    } catch {
+      showLogin("Nao foi possivel autenticar.");
+    }
+  });
+
   elements.studentSelect.addEventListener("change", (event) => {
     selectStudent(event.target.value);
   });
