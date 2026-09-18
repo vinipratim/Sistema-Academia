@@ -137,6 +137,10 @@ let state = loadState() || {
   workoutStatus: "rascunho",
   workoutStartDate: "",
   workoutEndDate: "",
+  cardioType: "",
+  cardioDuration: "",
+  cardioIntensity: "",
+  cardioFrequency: "",
   notes: "3X ENTRE 10 A 15 REPETICOES",
   activeDay: 0,
   showPreview: false,
@@ -169,6 +173,10 @@ const elements = {
   workoutStatus: document.querySelector("#workoutStatus"),
   workoutStartDate: document.querySelector("#workoutStartDate"),
   workoutEndDate: document.querySelector("#workoutEndDate"),
+  cardioType: document.querySelector("#cardioType"),
+  cardioDuration: document.querySelector("#cardioDuration"),
+  cardioIntensity: document.querySelector("#cardioIntensity"),
+  cardioFrequency: document.querySelector("#cardioFrequency"),
   workoutSelect: document.querySelector("#workoutSelect"),
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
@@ -429,6 +437,26 @@ function bindStaticEvents() {
     persist();
   });
 
+  elements.cardioType.addEventListener("input", (event) => {
+    state.cardioType = event.target.value;
+    persist();
+  });
+
+  elements.cardioDuration.addEventListener("input", (event) => {
+    state.cardioDuration = event.target.value;
+    persist();
+  });
+
+  elements.cardioIntensity.addEventListener("input", (event) => {
+    state.cardioIntensity = event.target.value;
+    persist();
+  });
+
+  elements.cardioFrequency.addEventListener("input", (event) => {
+    state.cardioFrequency = event.target.value;
+    persist();
+  });
+
   elements.workoutSelect.addEventListener("change", (event) => {
     selectWorkout(event.target.value);
   });
@@ -546,6 +574,10 @@ function newWorkout() {
   state.workoutStatus = "rascunho";
   state.workoutStartDate = "";
   state.workoutEndDate = "";
+  state.cardioType = "";
+  state.cardioDuration = "";
+  state.cardioIntensity = "";
+  state.cardioFrequency = "";
   state.notes = "3X ENTRE 10 A 15 REPETICOES";
   state.activeDay = 0;
   state.days = clone(initialDays);
@@ -568,6 +600,7 @@ function saveWorkout() {
     status: state.workoutStatus,
     startDate: state.workoutStartDate,
     endDate: state.workoutEndDate,
+    cardio: getCardioState(),
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -602,6 +635,7 @@ function duplicateWorkout() {
     status: state.workoutStatus,
     startDate: state.workoutStartDate,
     endDate: state.workoutEndDate,
+    cardio: getCardioState(),
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -615,6 +649,7 @@ function duplicateWorkout() {
     state.workoutStatus = workout.status || "rascunho";
     state.workoutStartDate = workout.startDate || "";
     state.workoutEndDate = workout.endDate || "";
+    applyCardioState(workout.cardio);
     state.notes = workout.notes;
   state.days = clone(workout.days);
   state.activeDay = 0;
@@ -749,6 +784,10 @@ function render() {
   elements.workoutStatus.value = state.workoutStatus || "rascunho";
   elements.workoutStartDate.value = state.workoutStartDate;
   elements.workoutEndDate.value = state.workoutEndDate;
+  elements.cardioType.value = state.cardioType;
+  elements.cardioDuration.value = state.cardioDuration;
+  elements.cardioIntensity.value = state.cardioIntensity;
+  elements.cardioFrequency.value = state.cardioFrequency;
   renderWorkoutSelect();
   renderWorkoutHistory();
   elements.workoutSelect.value = state.selectedWorkoutId || "";
@@ -836,6 +875,7 @@ function renderPreview() {
       <p><strong>Nivel:</strong> ${escapeHtml(getStudentLevelLabel(state.studentLevel))}</p>
       ${state.workoutStartDate ? `<p><strong>Inicio:</strong> ${escapeHtml(formatDate(state.workoutStartDate))}</p>` : ""}
       ${state.workoutEndDate ? `<p><strong>Fim:</strong> ${escapeHtml(formatDate(state.workoutEndDate))}</p>` : ""}
+      ${hasCardio() ? `<p><strong>Cardio:</strong> ${escapeHtml(formatCardio())}</p>` : ""}
       ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
       ${state.studentWeight ? `<p><strong>Peso:</strong> ${escapeHtml(state.studentWeight)}</p>` : ""}
       ${state.studentHeight ? `<p><strong>Altura:</strong> ${escapeHtml(state.studentHeight)}</p>` : ""}
@@ -1225,6 +1265,7 @@ function normalizeState() {
     status: workout.status || "rascunho",
     startDate: workout.startDate || "",
     endDate: workout.endDate || "",
+    cardio: normalizeCardio(workout.cardio),
     notes: workout.notes || "",
     days: normalizeDays(workout.days || initialDays),
     updatedAt: workout.updatedAt || "",
@@ -1234,6 +1275,7 @@ function normalizeState() {
   state.workoutStatus ||= "rascunho";
   state.workoutStartDate ||= "";
   state.workoutEndDate ||= "";
+  applyCardioState(normalizeCardio(state.cardio || getCardioState()));
   state.days ||= clone(initialDays);
   state.days.forEach((day) => {
     day.name ||= "01";
@@ -1435,6 +1477,48 @@ function buildWorkoutPeriodParagraphs(Paragraph, TextRun) {
   );
 }
 
+function getCardioState() {
+  return {
+    type: state.cardioType || "",
+    duration: state.cardioDuration || "",
+    intensity: state.cardioIntensity || "",
+    frequency: state.cardioFrequency || "",
+  };
+}
+
+function normalizeCardio(cardio = {}) {
+  return {
+    type: cardio.type || "",
+    duration: cardio.duration || "",
+    intensity: cardio.intensity || "",
+    frequency: cardio.frequency || "",
+  };
+}
+
+function applyCardioState(cardio = {}) {
+  const normalized = normalizeCardio(cardio);
+  state.cardioType = normalized.type;
+  state.cardioDuration = normalized.duration;
+  state.cardioIntensity = normalized.intensity;
+  state.cardioFrequency = normalized.frequency;
+  state.cardio = normalized;
+}
+
+function hasCardio() {
+  return Boolean(state.cardioType || state.cardioDuration || state.cardioIntensity || state.cardioFrequency);
+}
+
+function formatCardio() {
+  return [
+    state.cardioType,
+    state.cardioDuration,
+    state.cardioIntensity,
+    state.cardioFrequency,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+}
+
 async function downloadDocx() {
   if (!window.docx) {
     toast("A biblioteca de DOCX ainda nao carregou. Tente novamente em alguns segundos.");
@@ -1541,6 +1625,15 @@ async function downloadDocx() {
           new TextRun({ text: "Observacoes: ", bold: true }),
           new TextRun(state.notes.trim()),
         ],
+      }),
+    );
+  }
+
+  if (hasCardio()) {
+    children.push(
+      new Paragraph({
+        spacing: { after: 180 },
+        children: [new TextRun({ text: "Cardio: ", bold: true }), new TextRun(formatCardio())],
       }),
     );
   }
