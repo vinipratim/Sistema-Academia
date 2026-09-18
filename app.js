@@ -121,6 +121,7 @@ let state = loadState() || {
   studentName: "",
   studentContact: "",
   studentGoal: "",
+  studentLevel: "iniciante",
   studentNotes: "",
   studentWeight: "",
   studentHeight: "",
@@ -152,6 +153,7 @@ const elements = {
   studentName: document.querySelector("#studentName"),
   studentContact: document.querySelector("#studentContact"),
   studentGoal: document.querySelector("#studentGoal"),
+  studentLevel: document.querySelector("#studentLevel"),
   studentNotes: document.querySelector("#studentNotes"),
   studentWeight: document.querySelector("#studentWeight"),
   studentHeight: document.querySelector("#studentHeight"),
@@ -277,6 +279,7 @@ function clearStudentForm() {
   state.studentName = "";
   state.studentContact = "";
   state.studentGoal = "";
+  state.studentLevel = "iniciante";
   state.studentNotes = "";
   state.studentWeight = "";
   state.studentHeight = "";
@@ -348,6 +351,11 @@ function bindStaticEvents() {
 
   elements.studentGoal.addEventListener("input", (event) => {
     state.studentGoal = event.target.value;
+    persist();
+  });
+
+  elements.studentLevel.addEventListener("change", (event) => {
+    state.studentLevel = event.target.value;
     persist();
   });
 
@@ -472,6 +480,7 @@ function selectStudent(studentId) {
     state.studentName = student.name;
     state.studentContact = student.contact;
     state.studentGoal = student.goal;
+    state.studentLevel = student.level;
     state.studentNotes = student.notes;
     state.studentWeight = student.weight;
     state.studentHeight = student.height;
@@ -497,6 +506,7 @@ function saveStudent() {
     name,
     contact: state.studentContact.trim(),
     goal: state.studentGoal.trim(),
+    level: state.studentLevel,
     notes: state.studentNotes.trim(),
     weight: state.studentWeight.trim(),
     height: state.studentHeight.trim(),
@@ -709,6 +719,7 @@ function render() {
   elements.studentName.value = state.studentName;
   elements.studentContact.value = state.studentContact;
   elements.studentGoal.value = state.studentGoal;
+  elements.studentLevel.value = state.studentLevel;
   elements.studentNotes.value = state.studentNotes;
   elements.studentWeight.value = state.studentWeight;
   elements.studentHeight.value = state.studentHeight;
@@ -806,6 +817,7 @@ function renderPreview() {
       <p><strong>Professor:</strong> ${escapeHtml(state.teacherName || "-")}</p>
       <p><strong>Divisao:</strong> ${escapeHtml(getProfileLabel(state.profile))}</p>
       <p><strong>Status:</strong> ${escapeHtml(getWorkoutStatusLabel(state.workoutStatus))}</p>
+      <p><strong>Nivel:</strong> ${escapeHtml(getStudentLevelLabel(state.studentLevel))}</p>
       ${state.workoutStartDate ? `<p><strong>Inicio:</strong> ${escapeHtml(formatDate(state.workoutStartDate))}</p>` : ""}
       ${state.workoutEndDate ? `<p><strong>Fim:</strong> ${escapeHtml(formatDate(state.workoutEndDate))}</p>` : ""}
       ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
@@ -1141,6 +1153,7 @@ function normalizeState() {
   state.showPreview ||= false;
   state.studentContact ||= "";
   state.studentGoal ||= "";
+  state.studentLevel ||= "iniciante";
   state.studentNotes ||= "";
   state.studentWeight ||= "";
   state.studentHeight ||= "";
@@ -1152,6 +1165,7 @@ function normalizeState() {
     name: student.name || "",
     contact: student.contact || "",
     goal: student.goal || "",
+    level: student.level || "iniciante",
     notes: student.notes || "",
     weight: student.weight || "",
     height: student.height || "",
@@ -1419,6 +1433,17 @@ async function downloadDocx() {
           }),
         ]
       : []),
+    ...(layout.includeStudentDetails
+      ? [
+          new Paragraph({
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: "Nivel: ", bold: true }),
+              new TextRun(getStudentLevelLabel(state.studentLevel)),
+            ],
+          }),
+        ]
+      : []),
     ...buildStudentAssessmentParagraphs(Paragraph, TextRun, layout),
     new Paragraph({
       spacing: { after: 80 },
@@ -1623,6 +1648,16 @@ function getWorkoutStatusLabel(status) {
   };
 
   return labels[status] || "Rascunho";
+}
+
+function getStudentLevelLabel(level) {
+  const labels = {
+    iniciante: "Iniciante",
+    intermediario: "Intermediario",
+    avancado: "Avancado",
+  };
+
+  return labels[level] || "Iniciante";
 }
 
 function slugify(value) {
