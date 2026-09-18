@@ -10,6 +10,22 @@
     <script defer src="app.js"></script>
   </head>
   <body>
+    <section class="login-overlay" id="loginOverlay" hidden>
+      <form class="login-panel" id="loginForm">
+        <div class="brand-mark">ST</div>
+        <h1>Sistema de Treinos</h1>
+        <label>
+          Senha do professor
+          <input id="loginPassword" type="password" placeholder="Senha" autocomplete="current-password" />
+        </label>
+        <button class="primary" type="submit">
+          <i data-lucide="log-in"></i>
+          Entrar
+        </button>
+        <p id="loginError" class="login-error"></p>
+      </form>
+    </section>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
@@ -27,9 +43,47 @@
           </div>
 
           <label>
-            Aluno
+            Aluno cadastrado
+            <select id="studentSelect">
+              <option value="">Selecionar aluno</option>
+            </select>
+          </label>
+
+          <div class="inline-actions">
+            <button id="newStudentBtn" class="secondary" type="button">
+              <i data-lucide="user-plus"></i>
+              Novo
+            </button>
+            <button id="saveStudentBtn" class="secondary" type="button">
+              <i data-lucide="save"></i>
+              Salvar aluno
+            </button>
+          </div>
+
+          <label>
+            Nome do aluno
             <input id="studentName" type="text" placeholder="Nome do aluno" />
           </label>
+
+          <label>
+            Contato
+            <input id="studentContact" type="text" placeholder="Telefone ou WhatsApp" />
+          </label>
+
+          <label>
+            Objetivo
+            <input id="studentGoal" type="text" placeholder="Ex.: Hipertrofia, emagrecimento..." />
+          </label>
+
+          <label>
+            Observacoes do aluno
+            <textarea id="studentNotes" rows="3" placeholder="Restricoes, preferencias, historico..."></textarea>
+          </label>
+
+          <button id="deleteStudentBtn" class="danger full-action" type="button">
+            <i data-lucide="trash-2"></i>
+            Excluir aluno
+          </button>
 
           <label>
             Professor
@@ -53,9 +107,92 @@
           </label>
 
           <label>
+            Layout do Word
+            <select id="docxLayout">
+              <option value="simples">Simples</option>
+              <option value="compacto">Compacto</option>
+              <option value="detalhado">Detalhado</option>
+            </select>
+          </label>
+
+          <label>
+            Treino salvo
+            <select id="workoutSelect">
+              <option value="">Treino atual</option>
+            </select>
+          </label>
+
+          <div class="inline-actions">
+            <button id="newWorkoutBtn" class="secondary" type="button">
+              <i data-lucide="file-plus-2"></i>
+              Novo treino
+            </button>
+            <button id="saveWorkoutBtn" class="secondary" type="button">
+              <i data-lucide="folder-check"></i>
+              Salvar treino
+            </button>
+          </div>
+
+          <button id="duplicateWorkoutBtn" class="secondary full-action" type="button">
+            <i data-lucide="copy-plus"></i>
+            Duplicar treino
+          </button>
+
+          <label>
             Observacoes gerais
             <textarea id="generalNotes" rows="4" placeholder="Ex.: 3x entre 10 a 15 repeticoes"></textarea>
           </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <i data-lucide="dumbbell"></i>
+            <h2>Biblioteca</h2>
+          </div>
+
+          <label>
+            Exercicio cadastrado
+            <select id="libraryExerciseSelect">
+              <option value="">Novo exercicio</option>
+            </select>
+          </label>
+
+          <label>
+            Nome do exercicio
+            <input id="libraryExerciseName" type="text" placeholder="Ex.: SUPINO RETO" />
+          </label>
+
+          <label>
+            Grupo muscular
+            <select id="libraryExerciseGroup">
+              <option value="Peito">Peito</option>
+              <option value="Costas">Costas</option>
+              <option value="Pernas">Pernas</option>
+              <option value="Ombros">Ombros</option>
+              <option value="Bracos">Bracos</option>
+              <option value="Abdomen">Abdomen</option>
+              <option value="Gluteos">Gluteos</option>
+              <option value="Panturrilha">Panturrilha</option>
+              <option value="Mobilidade">Mobilidade</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </label>
+
+          <div class="inline-actions">
+            <button id="newExerciseBtn" class="secondary" type="button">
+              <i data-lucide="plus"></i>
+              Novo
+            </button>
+            <button id="saveExerciseBtn" class="secondary" type="button">
+              <i data-lucide="save"></i>
+              Salvar
+            </button>
+          </div>
+
+          <button id="deleteExerciseBtn" class="danger full-action" type="button">
+            <i data-lucide="trash-2"></i>
+            Excluir exercicio
+          </button>
         </section>
       </aside>
 
@@ -74,6 +211,10 @@
               <i data-lucide="save"></i>
               Salvar
             </button>
+            <button id="previewBtn" class="secondary" type="button">
+              <i data-lucide="eye"></i>
+              Preview
+            </button>
             <button id="downloadBtn" class="primary" type="button">
               <i data-lucide="download"></i>
               DOCX
@@ -89,6 +230,7 @@
           </button>
         </section>
         <section class="editor-grid" id="daysContainer"></section>
+        <section class="preview-panel" id="previewPanel" hidden></section>
       </main>
     </div>
   </body>
