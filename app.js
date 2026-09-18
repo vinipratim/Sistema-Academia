@@ -119,6 +119,7 @@ let state = loadState() || {
   teacherName: "",
   title: "Treino personalizado",
   profile: "personalizado",
+  docxLayout: "simples",
   notes: "3X ENTRE 10 A 15 REPETICOES",
   activeDay: 0,
   showPreview: false,
@@ -137,6 +138,7 @@ const elements = {
   teacherName: document.querySelector("#teacherName"),
   workoutTitle: document.querySelector("#workoutTitle"),
   workoutProfile: document.querySelector("#workoutProfile"),
+  docxLayout: document.querySelector("#docxLayout"),
   workoutSelect: document.querySelector("#workoutSelect"),
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
@@ -250,6 +252,11 @@ function bindStaticEvents() {
     persist();
   });
 
+  elements.docxLayout.addEventListener("change", (event) => {
+    state.docxLayout = event.target.value;
+    persist();
+  });
+
   elements.workoutSelect.addEventListener("change", (event) => {
     selectWorkout(event.target.value);
   });
@@ -345,6 +352,7 @@ function newWorkout() {
   state.selectedWorkoutId = "";
   state.title = "Treino personalizado";
   state.profile = "personalizado";
+  state.docxLayout = "simples";
   state.notes = "3X ENTRE 10 A 15 REPETICOES";
   state.activeDay = 0;
   state.days = clone(initialDays);
@@ -363,6 +371,7 @@ function saveWorkout() {
     studentId: state.selectedStudentId,
     title: state.title.trim() || "Treino sem titulo",
     profile: state.profile,
+    docxLayout: state.docxLayout,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -393,6 +402,7 @@ function duplicateWorkout() {
     studentId: state.selectedStudentId,
     title: `Copia - ${title}`,
     profile: state.profile,
+    docxLayout: state.docxLayout,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -402,6 +412,7 @@ function duplicateWorkout() {
   state.selectedWorkoutId = workout.id;
   state.title = workout.title;
   state.profile = workout.profile;
+  state.docxLayout = workout.docxLayout || "simples";
   state.notes = workout.notes;
   state.days = clone(workout.days);
   state.activeDay = 0;
@@ -520,6 +531,7 @@ function render() {
   elements.teacherName.value = state.teacherName;
   elements.workoutTitle.value = state.title;
   elements.workoutProfile.value = state.profile || "personalizado";
+  elements.docxLayout.value = state.docxLayout || "simples";
   renderWorkoutSelect();
   elements.workoutSelect.value = state.selectedWorkoutId || "";
   elements.generalNotes.value = state.notes;
@@ -916,11 +928,13 @@ function normalizeState() {
     studentId: workout.studentId || "",
     title: workout.title || "Treino sem titulo",
     profile: workout.profile || "personalizado",
+    docxLayout: workout.docxLayout || "simples",
     notes: workout.notes || "",
     days: normalizeDays(workout.days || initialDays),
     updatedAt: workout.updatedAt || "",
   }));
   state.profile ||= "personalizado";
+  state.docxLayout ||= "simples";
   state.days ||= clone(initialDays);
   state.days.forEach((day) => {
     day.name ||= "01";
@@ -1065,15 +1079,16 @@ async function downloadDocx() {
   } = window.docx;
 
   const docxApi = { AlignmentType, BorderStyle, Table, TableRow, TableCell, Paragraph, TextRun, WidthType };
+  const layout = getDocxLayoutConfig();
   const children = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 220 },
+      spacing: { after: layout.titleSpacing },
       children: [
         new TextRun({
           text: state.title || "Treino",
           bold: true,
-          size: 30,
+          size: layout.titleSize,
         }),
       ],
     }),
@@ -1084,7 +1099,7 @@ async function downloadDocx() {
         new TextRun(state.studentName || "-"),
       ],
     }),
-    ...(state.studentContact
+    ...(layout.includeStudentDetails && state.studentContact
       ? [
           new Paragraph({
             spacing: { after: 80 },
@@ -1095,7 +1110,7 @@ async function downloadDocx() {
           }),
         ]
       : []),
-    ...(state.studentGoal
+    ...(layout.includeStudentDetails && state.studentGoal
       ? [
           new Paragraph({
             spacing: { after: 80 },
@@ -1134,7 +1149,7 @@ async function downloadDocx() {
     );
   }
 
-  if (state.studentNotes.trim()) {
+  if (layout.includeStudentDetails && state.studentNotes.trim()) {
     children.push(
       new Paragraph({
         spacing: { after: 180 },
@@ -1169,10 +1184,10 @@ async function downloadDocx() {
         properties: {
           page: {
             margin: {
-              top: 720,
-              right: 720,
-              bottom: 720,
-              left: 720,
+              top: layout.margin,
+              right: layout.margin,
+              bottom: layout.margin,
+              left: layout.margin,
             },
           },
         },
@@ -1189,31 +1204,66 @@ async function downloadDocx() {
   setTimeout(() => URL.revokeObjectURL(link.href), 500);
 }
 
+function getDocxLayoutConfig() {
+  const layouts = {
+    simples: {
+      titleSize: 30,
+      titleSpacing: 220,
+      margin: 720,
+      tableFontSize: 20,
+      headerFontSize: 18,
+      cellMargin: 90,
+      includeStudentDetails: false,
+    },
+    compacto: {
+      titleSize: 26,
+      titleSpacing: 140,
+      margin: 500,
+      tableFontSize: 16,
+      headerFontSize: 14,
+      cellMargin: 55,
+      includeStudentDetails: false,
+    },
+    detalhado: {
+      titleSize: 30,
+      titleSpacing: 220,
+      margin: 720,
+      tableFontSize: 20,
+      headerFontSize: 18,
+      cellMargin: 90,
+      includeStudentDetails: true,
+    },
+  };
+
+  return layouts[state.docxLayout] || layouts.simples;
+}
+
 function buildExerciseTable(day, api) {
   const { AlignmentType, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, BorderStyle } = api;
+  const layout = getDocxLayoutConfig();
   const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
   const columnWidths = [5, 29, 10, 12, 11, 13, 20];
   const headerCell = (text, width) =>
     new TableCell({
       borders: { top: border, bottom: border, left: border, right: border },
-      margins: { top: 90, bottom: 90, left: 100, right: 100 },
+      margins: { top: layout.cellMargin, bottom: layout.cellMargin, left: layout.cellMargin, right: layout.cellMargin },
       width: { size: width, type: WidthType.PERCENTAGE },
       children: [
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text, bold: true, size: 18 })],
+          children: [new TextRun({ text, bold: true, size: layout.headerFontSize })],
         }),
       ],
     });
   const cell = (text, width, align = AlignmentType.LEFT) =>
     new TableCell({
       borders: { top: border, bottom: border, left: border, right: border },
-      margins: { top: 90, bottom: 90, left: 100, right: 100 },
+      margins: { top: layout.cellMargin, bottom: layout.cellMargin, left: layout.cellMargin, right: layout.cellMargin },
       width: { size: width, type: WidthType.PERCENTAGE },
       children: [
         new Paragraph({
           alignment: align,
-          children: [new TextRun({ text: String(text || ""), size: 20 })],
+          children: [new TextRun({ text: String(text || ""), size: layout.tableFontSize })],
         }),
       ],
     });
