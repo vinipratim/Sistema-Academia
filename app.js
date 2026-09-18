@@ -122,6 +122,11 @@ let state = loadState() || {
   studentContact: "",
   studentGoal: "",
   studentNotes: "",
+  studentWeight: "",
+  studentHeight: "",
+  studentBodyFat: "",
+  studentAssessmentDate: "",
+  studentMeasurements: "",
   teacherName: "",
   title: "Treino personalizado",
   profile: "personalizado",
@@ -145,6 +150,11 @@ const elements = {
   studentContact: document.querySelector("#studentContact"),
   studentGoal: document.querySelector("#studentGoal"),
   studentNotes: document.querySelector("#studentNotes"),
+  studentWeight: document.querySelector("#studentWeight"),
+  studentHeight: document.querySelector("#studentHeight"),
+  studentBodyFat: document.querySelector("#studentBodyFat"),
+  studentAssessmentDate: document.querySelector("#studentAssessmentDate"),
+  studentMeasurements: document.querySelector("#studentMeasurements"),
   teacherName: document.querySelector("#teacherName"),
   workoutTitle: document.querySelector("#workoutTitle"),
   workoutProfile: document.querySelector("#workoutProfile"),
@@ -255,6 +265,19 @@ function hideLogin() {
   elements.loginError.textContent = "";
 }
 
+function clearStudentForm() {
+  state.selectedStudentId = "";
+  state.studentName = "";
+  state.studentContact = "";
+  state.studentGoal = "";
+  state.studentNotes = "";
+  state.studentWeight = "";
+  state.studentHeight = "";
+  state.studentBodyFat = "";
+  state.studentAssessmentDate = "";
+  state.studentMeasurements = "";
+}
+
 function bindStaticEvents() {
   elements.loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -286,11 +309,7 @@ function bindStaticEvents() {
   });
 
   elements.newStudentBtn.addEventListener("click", () => {
-    state.selectedStudentId = "";
-    state.studentName = "";
-    state.studentContact = "";
-    state.studentGoal = "";
-    state.studentNotes = "";
+    clearStudentForm();
     render();
     persist();
   });
@@ -304,11 +323,7 @@ function bindStaticEvents() {
     }
 
     state.students = state.students.filter((student) => student.id !== state.selectedStudentId);
-    state.selectedStudentId = "";
-    state.studentName = "";
-    state.studentContact = "";
-    state.studentGoal = "";
-    state.studentNotes = "";
+    clearStudentForm();
     render();
     persist();
     toast("Aluno excluido.");
@@ -331,6 +346,31 @@ function bindStaticEvents() {
 
   elements.studentNotes.addEventListener("input", (event) => {
     state.studentNotes = event.target.value;
+    persist();
+  });
+
+  elements.studentWeight.addEventListener("input", (event) => {
+    state.studentWeight = event.target.value;
+    persist();
+  });
+
+  elements.studentHeight.addEventListener("input", (event) => {
+    state.studentHeight = event.target.value;
+    persist();
+  });
+
+  elements.studentBodyFat.addEventListener("input", (event) => {
+    state.studentBodyFat = event.target.value;
+    persist();
+  });
+
+  elements.studentAssessmentDate.addEventListener("input", (event) => {
+    state.studentAssessmentDate = event.target.value;
+    persist();
+  });
+
+  elements.studentMeasurements.addEventListener("input", (event) => {
+    state.studentMeasurements = event.target.value;
     persist();
   });
 
@@ -411,6 +451,11 @@ function selectStudent(studentId) {
     state.studentContact = student.contact;
     state.studentGoal = student.goal;
     state.studentNotes = student.notes;
+    state.studentWeight = student.weight;
+    state.studentHeight = student.height;
+    state.studentBodyFat = student.bodyFat;
+    state.studentAssessmentDate = student.assessmentDate;
+    state.studentMeasurements = student.measurements;
   }
 
   render();
@@ -431,6 +476,11 @@ function saveStudent() {
     contact: state.studentContact.trim(),
     goal: state.studentGoal.trim(),
     notes: state.studentNotes.trim(),
+    weight: state.studentWeight.trim(),
+    height: state.studentHeight.trim(),
+    bodyFat: state.studentBodyFat.trim(),
+    assessmentDate: state.studentAssessmentDate,
+    measurements: state.studentMeasurements.trim(),
   };
   const currentIndex = state.students.findIndex((item) => item.id === student.id);
 
@@ -626,6 +676,11 @@ function render() {
   elements.studentContact.value = state.studentContact;
   elements.studentGoal.value = state.studentGoal;
   elements.studentNotes.value = state.studentNotes;
+  elements.studentWeight.value = state.studentWeight;
+  elements.studentHeight.value = state.studentHeight;
+  elements.studentBodyFat.value = state.studentBodyFat;
+  elements.studentAssessmentDate.value = state.studentAssessmentDate;
+  elements.studentMeasurements.value = state.studentMeasurements;
   elements.teacherName.value = state.teacherName;
   elements.workoutTitle.value = state.title;
   elements.workoutProfile.value = state.profile || "personalizado";
@@ -686,6 +741,11 @@ function renderPreview() {
       <p><strong>Professor:</strong> ${escapeHtml(state.teacherName || "-")}</p>
       <p><strong>Divisao:</strong> ${escapeHtml(getProfileLabel(state.profile))}</p>
       ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
+      ${state.studentWeight ? `<p><strong>Peso:</strong> ${escapeHtml(state.studentWeight)}</p>` : ""}
+      ${state.studentHeight ? `<p><strong>Altura:</strong> ${escapeHtml(state.studentHeight)}</p>` : ""}
+      ${state.studentBodyFat ? `<p><strong>Gordura:</strong> ${escapeHtml(state.studentBodyFat)}</p>` : ""}
+      ${state.studentAssessmentDate ? `<p><strong>Avaliacao:</strong> ${escapeHtml(formatDate(state.studentAssessmentDate))}</p>` : ""}
+      ${state.studentMeasurements ? `<p><strong>Medidas:</strong> ${escapeHtml(state.studentMeasurements)}</p>` : ""}
       ${state.notes ? `<p><strong>Observacoes:</strong> ${escapeHtml(state.notes)}</p>` : ""}
     </div>
     ${state.days.map(renderPreviewDay).join("")}
@@ -1014,12 +1074,22 @@ function normalizeState() {
   state.studentContact ||= "";
   state.studentGoal ||= "";
   state.studentNotes ||= "";
+  state.studentWeight ||= "";
+  state.studentHeight ||= "";
+  state.studentBodyFat ||= "";
+  state.studentAssessmentDate ||= "";
+  state.studentMeasurements ||= "";
   state.students = state.students.map((student) => ({
     id: student.id || createId(),
     name: student.name || "",
     contact: student.contact || "",
     goal: student.goal || "",
     notes: student.notes || "",
+    weight: student.weight || "",
+    height: student.height || "",
+    bodyFat: student.bodyFat || "",
+    assessmentDate: student.assessmentDate || "",
+    measurements: student.measurements || "",
   }));
   state.savedWorkouts = state.savedWorkouts.map((workout) => ({
     id: workout.id || createId(),
@@ -1157,6 +1227,32 @@ function escapeHtml(value = "") {
   return escapeAttr(value).replaceAll("'", "&#039;");
 }
 
+function formatDate(value) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
+function buildStudentAssessmentParagraphs(Paragraph, TextRun, layout) {
+  if (!layout.includeStudentDetails) return [];
+
+  const lines = [
+    ["Peso", state.studentWeight],
+    ["Altura", state.studentHeight],
+    ["Gordura", state.studentBodyFat],
+    ["Data da avaliacao", formatDate(state.studentAssessmentDate)],
+    ["Medidas", state.studentMeasurements],
+  ].filter(([, value]) => value);
+
+  return lines.map(
+    ([label, value]) =>
+      new Paragraph({
+        spacing: { after: 80 },
+        children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun(value)],
+      }),
+  );
+}
+
 async function downloadDocx() {
   if (!window.docx) {
     toast("A biblioteca de DOCX ainda nao carregou. Tente novamente em alguns segundos.");
@@ -1219,6 +1315,7 @@ async function downloadDocx() {
           }),
         ]
       : []),
+    ...buildStudentAssessmentParagraphs(Paragraph, TextRun, layout),
     new Paragraph({
       spacing: { after: 80 },
       children: [
