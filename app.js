@@ -605,7 +605,11 @@ function renderDays() {
     card.querySelectorAll("[data-field]").forEach((input) => {
       input.addEventListener("change", (event) => {
         day[event.target.dataset.field] = event.target.value;
-        renderTabs();
+        if (event.target.dataset.field === "focus") {
+          render();
+        } else {
+          renderTabs();
+        }
         persist();
       });
     });
@@ -639,8 +643,7 @@ function renderExerciseRows(tbody, day) {
       <td>${exerciseIndex + 1}</td>
       <td>
         <select data-column="0" data-kind="exercise">
-          <option value="">Selecionar exercicio</option>
-          ${buildOptions(exerciseCatalog, selectedExercise)}
+          ${buildExerciseOptions(exerciseCatalog, selectedExercise, day.focus)}
           <option value="__custom__" ${customExercise ? "selected" : ""}>Outro exercicio</option>
         </select>
         <input class="custom-exercise ${customExercise ? "visible" : ""}" data-kind="custom-exercise" value="${customExercise ? escapeAttr(selectedExercise) : ""}" placeholder="Digite o exercicio" />
@@ -760,6 +763,37 @@ function normalizeState() {
 
 function getExerciseCatalog() {
   return state.exerciseCatalog?.length ? state.exerciseCatalog : defaultExerciseCatalog;
+}
+
+function buildExerciseOptions(options, selectedValue, focus) {
+  const selected = String(selectedValue || "");
+  const suggestedGroups = getSuggestedGroupsForFocus(focus);
+  const suggested = options.filter((exercise) => suggestedGroups.includes(state.exerciseGroups[exercise]));
+  const others = options.filter((exercise) => !suggested.includes(exercise));
+  const blank = `<option value="">Selecionar exercicio</option>`;
+
+  return [blank, buildOptionGroup("Sugeridos", suggested, selected), buildOptionGroup("Outros exercicios", others, selected)].join("");
+}
+
+function buildOptionGroup(label, options, selectedValue) {
+  if (!options.length) return "";
+
+  return `<optgroup label="${escapeAttr(label)}">${buildOptions(options, selectedValue)}</optgroup>`;
+}
+
+function getSuggestedGroupsForFocus(focus) {
+  const value = (focus || "").toLowerCase();
+
+  if (value.includes("peito")) return ["Peito", "Ombros", "Bracos"];
+  if (value.includes("costas")) return ["Costas", "Bracos"];
+  if (value.includes("superiores")) return ["Peito", "Costas", "Ombros", "Bracos"];
+  if (value.includes("posterior")) return ["Pernas", "Gluteos", "Panturrilha"];
+  if (value.includes("glute")) return ["Gluteos", "Pernas"];
+  if (value.includes("quadriceps")) return ["Pernas"];
+  if (value.includes("pernas")) return ["Pernas", "Gluteos", "Panturrilha", "Abdomen", "Mobilidade"];
+  if (value.includes("abdomen")) return ["Abdomen"];
+
+  return muscleGroups;
 }
 
 function buildDefaultExerciseGroups() {
