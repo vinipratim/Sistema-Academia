@@ -173,6 +173,7 @@ const elements = {
   duplicateWorkoutBtn: document.querySelector("#duplicateWorkoutBtn"),
   workoutHistory: document.querySelector("#workoutHistory"),
   generalNotes: document.querySelector("#generalNotes"),
+  libraryExerciseSearch: document.querySelector("#libraryExerciseSearch"),
   libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
   libraryExerciseName: document.querySelector("#libraryExerciseName"),
   libraryExerciseGroup: document.querySelector("#libraryExerciseGroup"),
@@ -442,6 +443,10 @@ function bindStaticEvents() {
     const exerciseName = event.target.value;
     elements.libraryExerciseName.value = exerciseName;
     elements.libraryExerciseGroup.value = state.exerciseGroups[exerciseName] || "Outros";
+  });
+
+  elements.libraryExerciseSearch.addEventListener("input", () => {
+    renderLibraryExerciseSelect();
   });
 
   elements.newExerciseBtn.addEventListener("click", () => {
@@ -874,13 +879,16 @@ function renderPreviewDay(day) {
 
 function renderLibraryExerciseSelect() {
   elements.libraryExerciseSelect.innerHTML = '<option value="">Novo exercicio</option>';
+  const search = elements.libraryExerciseSearch.value.trim().toUpperCase();
 
-  state.exerciseCatalog.forEach((exercise) => {
+  state.exerciseCatalog
+    .filter((exercise) => !search || exercise.includes(search) || (state.exerciseGroups[exercise] || "").toUpperCase().includes(search))
+    .forEach((exercise) => {
     const option = document.createElement("option");
     option.value = exercise;
     option.textContent = `${exercise} - ${state.exerciseGroups[exercise] || "Outros"}`;
     elements.libraryExerciseSelect.append(option);
-  });
+    });
 }
 
 function renderTabs() {
