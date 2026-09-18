@@ -854,6 +854,7 @@ function renderPreviewDay(day) {
   return `
     <section class="preview-day">
       <h3>Dia ${escapeHtml(day.name)}${escapeHtml(focus)}</h3>
+      ${day.warmup ? `<p><strong>Aquecimento:</strong> ${escapeHtml(day.warmup)}</p>` : ""}
       ${day.notes ? `<p>${escapeHtml(day.notes)}</p>` : ""}
       <table>
         <thead>
@@ -959,6 +960,10 @@ function renderDays() {
           <i data-lucide="trash-2"></i>
           Remover
         </button>
+        <label class="day-notes">
+          Aquecimento
+          <textarea data-field="warmup" rows="2" placeholder="Mobilidade, cardio leve, series de aquecimento...">${escapeHtml(day.warmup || "")}</textarea>
+        </label>
         <label class="day-notes">
           Observacoes do dia
           <textarea data-field="notes" rows="2" placeholder="Orientacoes especificas deste dia">${escapeHtml(day.notes || "")}</textarea>
@@ -1233,6 +1238,7 @@ function normalizeState() {
   state.days.forEach((day) => {
     day.name ||= "01";
     day.focus ||= "Personalizado";
+    day.warmup ||= "";
     day.notes ||= "";
     day.exercises ||= [];
     day.exercises = day.exercises.map(normalizeExercise);
@@ -1242,6 +1248,7 @@ function normalizeState() {
 function normalizeDays(days) {
   return clone(days).map((day) => ({
     ...day,
+    warmup: day.warmup || "",
     notes: day.notes || "",
     exercises: (day.exercises || []).map(normalizeExercise),
   }));
@@ -1563,6 +1570,14 @@ async function downloadDocx() {
           }),
         ],
       }),
+      ...(day.warmup
+        ? [
+            new Paragraph({
+              spacing: { after: 80 },
+              children: [new TextRun({ text: "Aquecimento: ", bold: true }), new TextRun(day.warmup)],
+            }),
+          ]
+        : []),
       ...(day.notes
         ? [
             new Paragraph({
