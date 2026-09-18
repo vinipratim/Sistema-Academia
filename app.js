@@ -105,7 +105,12 @@ const initialDays = [
 ];
 
 let state = loadState() || {
+  students: [],
+  selectedStudentId: "",
   studentName: "",
+  studentContact: "",
+  studentGoal: "",
+  studentNotes: "",
   teacherName: "",
   title: "Treino personalizado",
   profile: "personalizado",
@@ -115,7 +120,14 @@ let state = loadState() || {
 };
 
 const elements = {
+  studentSelect: document.querySelector("#studentSelect"),
+  newStudentBtn: document.querySelector("#newStudentBtn"),
+  saveStudentBtn: document.querySelector("#saveStudentBtn"),
+  deleteStudentBtn: document.querySelector("#deleteStudentBtn"),
   studentName: document.querySelector("#studentName"),
+  studentContact: document.querySelector("#studentContact"),
+  studentGoal: document.querySelector("#studentGoal"),
+  studentNotes: document.querySelector("#studentNotes"),
   teacherName: document.querySelector("#teacherName"),
   workoutTitle: document.querySelector("#workoutTitle"),
   workoutProfile: document.querySelector("#workoutProfile"),
@@ -133,6 +145,10 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function createId() {
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -147,8 +163,56 @@ function persist() {
 }
 
 function bindStaticEvents() {
+  elements.studentSelect.addEventListener("change", (event) => {
+    selectStudent(event.target.value);
+  });
+
+  elements.newStudentBtn.addEventListener("click", () => {
+    state.selectedStudentId = "";
+    state.studentName = "";
+    state.studentContact = "";
+    state.studentGoal = "";
+    state.studentNotes = "";
+    render();
+    persist();
+  });
+
+  elements.saveStudentBtn.addEventListener("click", saveStudent);
+
+  elements.deleteStudentBtn.addEventListener("click", () => {
+    if (!state.selectedStudentId) {
+      toast("Selecione um aluno para excluir.");
+      return;
+    }
+
+    state.students = state.students.filter((student) => student.id !== state.selectedStudentId);
+    state.selectedStudentId = "";
+    state.studentName = "";
+    state.studentContact = "";
+    state.studentGoal = "";
+    state.studentNotes = "";
+    render();
+    persist();
+    toast("Aluno excluido.");
+  });
+
   elements.studentName.addEventListener("input", (event) => {
     state.studentName = event.target.value;
+    persist();
+  });
+
+  elements.studentContact.addEventListener("input", (event) => {
+    state.studentContact = event.target.value;
+    persist();
+  });
+
+  elements.studentGoal.addEventListener("input", (event) => {
+    state.studentGoal = event.target.value;
+    persist();
+  });
+
+  elements.studentNotes.addEventListener("input", (event) => {
+    state.studentNotes = event.target.value;
     persist();
   });
 
@@ -184,6 +248,50 @@ function bindStaticEvents() {
   elements.downloadBtn.addEventListener("click", downloadDocx);
 }
 
+function selectStudent(studentId) {
+  const student = state.students.find((item) => item.id === studentId);
+  state.selectedStudentId = studentId;
+
+  if (student) {
+    state.studentName = student.name;
+    state.studentContact = student.contact;
+    state.studentGoal = student.goal;
+    state.studentNotes = student.notes;
+  }
+
+  render();
+  persist();
+}
+
+function saveStudent() {
+  const name = state.studentName.trim();
+
+  if (!name) {
+    toast("Informe o nome do aluno.");
+    return;
+  }
+
+  const student = {
+    id: state.selectedStudentId || createId(),
+    name,
+    contact: state.studentContact.trim(),
+    goal: state.studentGoal.trim(),
+    notes: state.studentNotes.trim(),
+  };
+  const currentIndex = state.students.findIndex((item) => item.id === student.id);
+
+  if (currentIndex >= 0) {
+    state.students[currentIndex] = student;
+  } else {
+    state.students.push(student);
+  }
+
+  state.selectedStudentId = student.id;
+  render();
+  persist();
+  toast("Aluno salvo.");
+}
+
 function addDay() {
   state.days.push({
     name: String(state.days.length + 1).padStart(2, "0"),
@@ -197,7 +305,12 @@ function addDay() {
 
 function render() {
   normalizeState();
+  renderStudentSelect();
+  elements.studentSelect.value = state.selectedStudentId || "";
   elements.studentName.value = state.studentName;
+  elements.studentContact.value = state.studentContact;
+  elements.studentGoal.value = state.studentGoal;
+  elements.studentNotes.value = state.studentNotes;
   elements.teacherName.value = state.teacherName;
   elements.workoutTitle.value = state.title;
   elements.workoutProfile.value = state.profile || "personalizado";
@@ -207,6 +320,20 @@ function render() {
   renderTabs();
   renderDays();
   window.lucide?.createIcons();
+}
+
+function renderStudentSelect() {
+  elements.studentSelect.innerHTML = '<option value="">Selecionar aluno</option>';
+
+  state.students
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+    .forEach((student) => {
+      const option = document.createElement("option");
+      option.value = student.id;
+      option.textContent = student.name;
+      elements.studentSelect.append(option);
+    });
 }
 
 function renderTabs() {
@@ -382,6 +509,18 @@ function renderExerciseRows(tbody, day) {
 }
 
 function normalizeState() {
+  state.students ||= [];
+  state.selectedStudentId ||= "";
+  state.studentContact ||= "";
+  state.studentGoal ||= "";
+  state.studentNotes ||= "";
+  state.students = state.students.map((student) => ({
+    id: student.id || createId(),
+    name: student.name || "",
+    contact: student.contact || "",
+    goal: student.goal || "",
+    notes: student.notes || "",
+  }));
   state.profile ||= "personalizado";
   state.days ||= clone(initialDays);
   state.days.forEach((day) => {
@@ -456,6 +595,28 @@ async function downloadDocx() {
         new TextRun(state.studentName || "-"),
       ],
     }),
+    ...(state.studentContact
+      ? [
+          new Paragraph({
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: "Contato: ", bold: true }),
+              new TextRun(state.studentContact),
+            ],
+          }),
+        ]
+      : []),
+    ...(state.studentGoal
+      ? [
+          new Paragraph({
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: "Objetivo: ", bold: true }),
+              new TextRun(state.studentGoal),
+            ],
+          }),
+        ]
+      : []),
     new Paragraph({
       spacing: { after: 80 },
       children: [
@@ -479,6 +640,18 @@ async function downloadDocx() {
         children: [
           new TextRun({ text: "Observacoes: ", bold: true }),
           new TextRun(state.notes.trim()),
+        ],
+      }),
+    );
+  }
+
+  if (state.studentNotes.trim()) {
+    children.push(
+      new Paragraph({
+        spacing: { after: 180 },
+        children: [
+          new TextRun({ text: "Observacoes do aluno: ", bold: true }),
+          new TextRun(state.studentNotes.trim()),
         ],
       }),
     );
@@ -616,4 +789,3 @@ function toast(message) {
 
 bindStaticEvents();
 render();
-A
