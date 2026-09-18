@@ -492,7 +492,7 @@ function addDay() {
   state.days.push({
     name: String(state.days.length + 1).padStart(2, "0"),
     focus: "Personalizado",
-    exercises: [["", "3", "12", "", ""]],
+    exercises: [["", "3", "12", "", "", ""]],
   });
   state.activeDay = state.days.length - 1;
   render();
@@ -620,7 +620,8 @@ function renderDays() {
             <th>Series</th>
             <th>Repeticoes</th>
             <th>Descanso</th>
-            <th>Carga/obs.</th>
+            <th>Carga</th>
+            <th>Obs.</th>
             <th></th>
           </tr>
         </thead>
@@ -658,7 +659,7 @@ function renderDays() {
     });
 
     card.querySelector("[data-action='add-exercise']").addEventListener("click", () => {
-      day.exercises.push(["", "3", "12", "", ""]);
+      day.exercises.push(["", "3", "12", "", "", ""]);
       render();
       persist();
     });
@@ -716,7 +717,8 @@ function renderExerciseRows(tbody, day) {
         <input class="custom-field ${customReps ? "visible" : ""}" data-column="2" data-kind="custom-value" value="${customReps ? escapeAttr(exercise[2]) : ""}" placeholder="Ex.: 8 + isometria" />
       </td>
       <td><input data-column="3" value="${escapeAttr(exercise[3])}" placeholder="Ex.: 60 seg" /></td>
-      <td><input data-column="4" value="${escapeAttr(exercise[4])}" placeholder="Carga, ajuste..." /></td>
+      <td><input data-column="4" value="${escapeAttr(exercise[4])}" placeholder="Ex.: 20 kg" /></td>
+      <td><input data-column="5" value="${escapeAttr(exercise[5])}" placeholder="Ajustes, tecnica..." /></td>
       <td>
         <div class="row-actions">
           <button class="icon-button" data-action="move-up" type="button" title="Mover para cima" ${exerciseIndex === 0 ? "disabled" : ""}>
@@ -863,11 +865,22 @@ function normalizeDays(days) {
 }
 
 function normalizeExercise(exercise) {
-  if (exercise.length >= 5) {
-    return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", exercise[3] || "", exercise[4] || ""];
+  if (exercise.length >= 6) {
+    return [
+      exercise[0] || "",
+      exercise[1] || "3",
+      exercise[2] || "12",
+      exercise[3] || "",
+      exercise[4] || "",
+      exercise[5] || "",
+    ];
   }
 
-  return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", "", exercise[3] || ""];
+  if (exercise.length >= 5) {
+    return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", exercise[3] || "", "", exercise[4] || ""];
+  }
+
+  return [exercise[0] || "", exercise[1] || "3", exercise[2] || "12", "", "", exercise[3] || ""];
 }
 
 function getExerciseCatalog() {
@@ -1102,7 +1115,7 @@ async function downloadDocx() {
 function buildExerciseTable(day, api) {
   const { AlignmentType, Table, TableRow, TableCell, Paragraph, TextRun, WidthType, BorderStyle } = api;
   const border = { style: BorderStyle.SINGLE, size: 1, color: "999999" };
-  const columnWidths = [6, 34, 11, 13, 13, 23];
+  const columnWidths = [5, 29, 10, 12, 11, 13, 20];
   const headerCell = (text, width) =>
     new TableCell({
       borders: { top: border, bottom: border, left: border, right: border },
@@ -1133,7 +1146,7 @@ function buildExerciseTable(day, api) {
     rows: [
       new TableRow({
         tableHeader: true,
-        children: ["#", "EXERCICIO", "SERIES", "REPETICOES", "DESCANSO", "CARGA/OBS."].map((text, index) =>
+        children: ["#", "EXERCICIO", "SERIES", "REPETICOES", "DESCANSO", "CARGA", "OBS."].map((text, index) =>
           headerCell(text, columnWidths[index]),
         ),
       }),
@@ -1146,7 +1159,8 @@ function buildExerciseTable(day, api) {
               cell(exercise[1], columnWidths[2], AlignmentType.CENTER),
               cell(exercise[2], columnWidths[3], AlignmentType.CENTER),
               cell(exercise[3], columnWidths[4], AlignmentType.CENTER),
-              cell(exercise[4], columnWidths[5], AlignmentType.LEFT),
+              cell(exercise[4], columnWidths[5], AlignmentType.CENTER),
+              cell(exercise[5], columnWidths[6], AlignmentType.LEFT),
             ],
           }),
       ),
