@@ -61,8 +61,8 @@ const focusOptions = [
   "Personalizado",
 ];
 
-const seriesOptions = ["1", "2", "3", "4", "5", "6"];
-const repsOptions = ["8", "10", "12", "15", "16", "20", "30 SEG", "45 SEG", "60 SEG"];
+const seriesOptions = ["1", "2", "3", "4", "5", "6", "BI-SET", "TRI-SET", "DROP-SET"];
+const repsOptions = ["6", "8", "10", "10 A 12", "12", "12 A 15", "15", "16", "20", "FALHA", "30 SEG", "45 SEG", "60 SEG"];
 const muscleGroups = ["Peito", "Costas", "Pernas", "Ombros", "Bracos", "Abdomen", "Gluteos", "Panturrilha", "Mobilidade", "Outros"];
 
 const initialDays = [
@@ -598,13 +598,13 @@ function renderDays() {
         <label>
           Dia
           <select data-field="name">
-            ${buildOptions(["01", "02", "03", "04", "05", "06", "07"], day.name)}
+            ${buildOptions(["01", "02", "03", "04", "05", "06", "07"], day.name, true)}
           </select>
         </label>
         <label>
           Foco
           <select data-field="focus">
-            ${buildOptions(focusOptions, day.focus)}
+            ${buildOptions(focusOptions, day.focus, true)}
           </select>
         </label>
         <button class="danger" data-action="remove-day" type="button">
@@ -688,6 +688,8 @@ function renderExerciseRows(tbody, day) {
   day.exercises.forEach((exercise, exerciseIndex) => {
     const selectedExercise = exercise[0] || "";
     const customExercise = selectedExercise && !exerciseCatalog.includes(selectedExercise);
+    const customSeries = exercise[1] && !seriesOptions.includes(exercise[1]);
+    const customReps = exercise[2] && !repsOptions.includes(exercise[2]);
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${exerciseIndex + 1}</td>
@@ -699,14 +701,18 @@ function renderExerciseRows(tbody, day) {
         <input class="custom-exercise ${customExercise ? "visible" : ""}" data-kind="custom-exercise" value="${customExercise ? escapeAttr(selectedExercise) : ""}" placeholder="Digite o exercicio" />
       </td>
       <td>
-        <select data-column="1">
+        <select data-column="1" data-kind="quick-value">
           ${buildOptions(seriesOptions, exercise[1] || "3")}
+          <option value="__custom__" ${customSeries ? "selected" : ""}>Outro valor</option>
         </select>
+        <input class="custom-field ${customSeries ? "visible" : ""}" data-column="1" data-kind="custom-value" value="${customSeries ? escapeAttr(exercise[1]) : ""}" placeholder="Ex.: 4 + drop" />
       </td>
       <td>
-        <select data-column="2">
+        <select data-column="2" data-kind="quick-value">
           ${buildOptions(repsOptions, exercise[2] || "12")}
+          <option value="__custom__" ${customReps ? "selected" : ""}>Outro valor</option>
         </select>
+        <input class="custom-field ${customReps ? "visible" : ""}" data-column="2" data-kind="custom-value" value="${customReps ? escapeAttr(exercise[2]) : ""}" placeholder="Ex.: 8 + isometria" />
       </td>
       <td><input data-column="3" value="${escapeAttr(exercise[3])}" placeholder="Carga, descanso, ajuste..." /></td>
       <td>
@@ -737,8 +743,22 @@ function renderExerciseRows(tbody, day) {
           return;
         }
 
+        if (event.target.dataset.kind === "quick-value" && event.target.value === "__custom__") {
+          const customInput = row.querySelector(`[data-kind='custom-value'][data-column='${column}']`);
+          customInput.classList.add("visible");
+          customInput.focus();
+          exercise[column] = customInput.value;
+          persist();
+          return;
+        }
+
         exercise[column] = event.target.value;
-        row.querySelector("[data-kind='custom-exercise']").classList.remove("visible");
+        if (event.target.dataset.kind === "exercise") {
+          row.querySelector("[data-kind='custom-exercise']").classList.remove("visible");
+        }
+        if (event.target.dataset.kind === "quick-value") {
+          row.querySelector(`[data-kind='custom-value'][data-column='${column}']`).classList.remove("visible");
+        }
         persist();
       });
     });
@@ -903,9 +923,9 @@ function inferMuscleGroup(exerciseName) {
   return "Outros";
 }
 
-function buildOptions(options, selectedValue) {
+function buildOptions(options, selectedValue, includeMissing = false) {
   const selected = String(selectedValue || "");
-  const normalizedOptions = options.includes(selected) || !selected ? options : [selected, ...options];
+  const normalizedOptions = includeMissing && selected && !options.includes(selected) ? [selected, ...options] : options;
 
   return normalizedOptions
     .map((option) => {

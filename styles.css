@@ -341,12 +341,14 @@ select:focus {
   min-width: 96px;
 }
 
-.custom-exercise {
+.custom-exercise,
+.custom-field {
   display: none;
   margin-top: 8px;
 }
 
-.custom-exercise.visible {
+.custom-exercise.visible,
+.custom-field.visible {
   display: block;
 }
 
