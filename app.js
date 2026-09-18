@@ -660,9 +660,17 @@ function renderExerciseRows(tbody, day) {
       </td>
       <td><input data-column="3" value="${escapeAttr(exercise[3])}" placeholder="Carga, descanso, ajuste..." /></td>
       <td>
-        <button class="icon-button" data-action="remove-exercise" type="button" title="Remover exercicio">
-          <i data-lucide="x"></i>
-        </button>
+        <div class="row-actions">
+          <button class="icon-button" data-action="move-up" type="button" title="Mover para cima" ${exerciseIndex === 0 ? "disabled" : ""}>
+            <i data-lucide="arrow-up"></i>
+          </button>
+          <button class="icon-button" data-action="move-down" type="button" title="Mover para baixo" ${exerciseIndex === day.exercises.length - 1 ? "disabled" : ""}>
+            <i data-lucide="arrow-down"></i>
+          </button>
+          <button class="icon-button" data-action="remove-exercise" type="button" title="Remover exercicio">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
       </td>
     `;
 
@@ -697,6 +705,14 @@ function renderExerciseRows(tbody, day) {
       persist();
     });
 
+    row.querySelector("[data-action='move-up']").addEventListener("click", () => {
+      moveExercise(day, exerciseIndex, exerciseIndex - 1);
+    });
+
+    row.querySelector("[data-action='move-down']").addEventListener("click", () => {
+      moveExercise(day, exerciseIndex, exerciseIndex + 1);
+    });
+
     row.querySelector("[data-action='remove-exercise']").addEventListener("click", () => {
       day.exercises.splice(exerciseIndex, 1);
       render();
@@ -705,6 +721,17 @@ function renderExerciseRows(tbody, day) {
 
     tbody.append(row);
   });
+}
+
+function moveExercise(day, fromIndex, toIndex) {
+  if (toIndex < 0 || toIndex >= day.exercises.length) {
+    return;
+  }
+
+  const [exercise] = day.exercises.splice(fromIndex, 1);
+  day.exercises.splice(toIndex, 0, exercise);
+  render();
+  persist();
 }
 
 function normalizeState() {
