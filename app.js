@@ -599,6 +599,10 @@ function renderDays() {
           <i data-lucide="plus"></i>
           Exercicio
         </button>
+        <button class="secondary" data-action="duplicate-day" type="button">
+          <i data-lucide="copy-plus"></i>
+          Duplicar dia
+        </button>
       </div>
     `;
 
@@ -627,9 +631,24 @@ function renderDays() {
       persist();
     });
 
+    card.querySelector("[data-action='duplicate-day']").addEventListener("click", () => {
+      duplicateDay(dayIndex);
+    });
+
     renderExerciseRows(card.querySelector("tbody"), day, dayIndex);
     elements.daysContainer.append(card);
   });
+}
+
+function duplicateDay(dayIndex) {
+  const sourceDay = state.days[dayIndex];
+  const duplicatedDay = clone(sourceDay);
+
+  duplicatedDay.name = String(state.days.length + 1).padStart(2, "0");
+  state.days.splice(dayIndex + 1, 0, duplicatedDay);
+  state.activeDay = dayIndex + 1;
+  render();
+  persist();
 }
 
 function renderExerciseRows(tbody, day) {
