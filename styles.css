@@ -232,6 +232,30 @@ select:focus {
   margin-bottom: 18px;
 }
 
+.history-box {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.history-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 10px 12px;
+}
+
+.history-item strong,
+.history-item span {
+  display: block;
+}
+
+.history-item span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .primary,
 .secondary,
 .ghost,

@@ -163,6 +163,7 @@ const elements = {
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
   duplicateWorkoutBtn: document.querySelector("#duplicateWorkoutBtn"),
+  workoutHistory: document.querySelector("#workoutHistory"),
   generalNotes: document.querySelector("#generalNotes"),
   libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
   libraryExerciseName: document.querySelector("#libraryExerciseName"),
@@ -686,6 +687,7 @@ function render() {
   elements.workoutProfile.value = state.profile || "personalizado";
   elements.docxLayout.value = state.docxLayout || "simples";
   renderWorkoutSelect();
+  renderWorkoutHistory();
   elements.workoutSelect.value = state.selectedWorkoutId || "";
   elements.generalNotes.value = state.notes;
   elements.screenTitle.textContent = state.title || "Treino sem titulo";
@@ -723,6 +725,33 @@ function renderWorkoutSelect() {
       option.textContent = workout.title;
       elements.workoutSelect.append(option);
     });
+}
+
+function renderWorkoutHistory() {
+  const workouts = state.savedWorkouts
+    .filter((workout) => workout.studentId === state.selectedStudentId)
+    .slice()
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+
+  if (!workouts.length) {
+    elements.workoutHistory.innerHTML = "";
+    return;
+  }
+
+  elements.workoutHistory.innerHTML = workouts
+    .map(
+      (workout) => `
+        <button class="history-item" type="button" data-workout-id="${escapeAttr(workout.id)}">
+          <strong>${escapeHtml(workout.title)}</strong>
+          <span>${escapeHtml(formatDateTime(workout.updatedAt))}</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  elements.workoutHistory.querySelectorAll("[data-workout-id]").forEach((button) => {
+    button.addEventListener("click", () => selectWorkout(button.dataset.workoutId));
+  });
 }
 
 function renderPreview() {
@@ -1231,6 +1260,21 @@ function formatDate(value) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
+function formatDateTime(value) {
+  if (!value) return "Sem data";
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function buildStudentAssessmentParagraphs(Paragraph, TextRun, layout) {
