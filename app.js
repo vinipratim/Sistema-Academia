@@ -131,6 +131,7 @@ let state = loadState() || {
   title: "Treino personalizado",
   profile: "personalizado",
   docxLayout: "simples",
+  workoutStatus: "rascunho",
   notes: "3X ENTRE 10 A 15 REPETICOES",
   activeDay: 0,
   showPreview: false,
@@ -159,6 +160,7 @@ const elements = {
   workoutTitle: document.querySelector("#workoutTitle"),
   workoutProfile: document.querySelector("#workoutProfile"),
   docxLayout: document.querySelector("#docxLayout"),
+  workoutStatus: document.querySelector("#workoutStatus"),
   workoutSelect: document.querySelector("#workoutSelect"),
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
@@ -396,6 +398,11 @@ function bindStaticEvents() {
     persist();
   });
 
+  elements.workoutStatus.addEventListener("change", (event) => {
+    state.workoutStatus = event.target.value;
+    persist();
+  });
+
   elements.workoutSelect.addEventListener("change", (event) => {
     selectWorkout(event.target.value);
   });
@@ -502,6 +509,7 @@ function newWorkout() {
   state.title = "Treino personalizado";
   state.profile = "personalizado";
   state.docxLayout = "simples";
+  state.workoutStatus = "rascunho";
   state.notes = "3X ENTRE 10 A 15 REPETICOES";
   state.activeDay = 0;
   state.days = clone(initialDays);
@@ -521,6 +529,7 @@ function saveWorkout() {
     title: state.title.trim() || "Treino sem titulo",
     profile: state.profile,
     docxLayout: state.docxLayout,
+    status: state.workoutStatus,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -552,6 +561,7 @@ function duplicateWorkout() {
     title: `Copia - ${title}`,
     profile: state.profile,
     docxLayout: state.docxLayout,
+    status: state.workoutStatus,
     notes: state.notes,
     days: clone(state.days),
     updatedAt: new Date().toISOString(),
@@ -559,10 +569,11 @@ function duplicateWorkout() {
 
   state.savedWorkouts.push(workout);
   state.selectedWorkoutId = workout.id;
-  state.title = workout.title;
-  state.profile = workout.profile;
-  state.docxLayout = workout.docxLayout || "simples";
-  state.notes = workout.notes;
+    state.title = workout.title;
+    state.profile = workout.profile;
+    state.docxLayout = workout.docxLayout || "simples";
+    state.workoutStatus = workout.status || "rascunho";
+    state.notes = workout.notes;
   state.days = clone(workout.days);
   state.activeDay = 0;
   render();
@@ -686,6 +697,7 @@ function render() {
   elements.workoutTitle.value = state.title;
   elements.workoutProfile.value = state.profile || "personalizado";
   elements.docxLayout.value = state.docxLayout || "simples";
+  elements.workoutStatus.value = state.workoutStatus || "rascunho";
   renderWorkoutSelect();
   renderWorkoutHistory();
   elements.workoutSelect.value = state.selectedWorkoutId || "";
@@ -769,6 +781,7 @@ function renderPreview() {
       <p><strong>Aluno:</strong> ${escapeHtml(state.studentName || "-")}</p>
       <p><strong>Professor:</strong> ${escapeHtml(state.teacherName || "-")}</p>
       <p><strong>Divisao:</strong> ${escapeHtml(getProfileLabel(state.profile))}</p>
+      <p><strong>Status:</strong> ${escapeHtml(getWorkoutStatusLabel(state.workoutStatus))}</p>
       ${state.studentGoal ? `<p><strong>Objetivo:</strong> ${escapeHtml(state.studentGoal)}</p>` : ""}
       ${state.studentWeight ? `<p><strong>Peso:</strong> ${escapeHtml(state.studentWeight)}</p>` : ""}
       ${state.studentHeight ? `<p><strong>Altura:</strong> ${escapeHtml(state.studentHeight)}</p>` : ""}
@@ -1126,12 +1139,14 @@ function normalizeState() {
     title: workout.title || "Treino sem titulo",
     profile: workout.profile || "personalizado",
     docxLayout: workout.docxLayout || "simples",
+    status: workout.status || "rascunho",
     notes: workout.notes || "",
     days: normalizeDays(workout.days || initialDays),
     updatedAt: workout.updatedAt || "",
   }));
   state.profile ||= "personalizado";
   state.docxLayout ||= "simples";
+  state.workoutStatus ||= "rascunho";
   state.days ||= clone(initialDays);
   state.days.forEach((day) => {
     day.name ||= "01";
@@ -1374,6 +1389,13 @@ async function downloadDocx() {
         new TextRun(getProfileLabel(state.profile)),
       ],
     }),
+    new Paragraph({
+      spacing: { after: 180 },
+      children: [
+        new TextRun({ text: "Status: ", bold: true }),
+        new TextRun(getWorkoutStatusLabel(state.workoutStatus)),
+      ],
+    }),
   ];
 
   if (state.notes.trim()) {
@@ -1544,6 +1566,17 @@ function getProfileLabel(profile) {
   };
 
   return labels[profile] || "Personalizado";
+}
+
+function getWorkoutStatusLabel(status) {
+  const labels = {
+    rascunho: "Rascunho",
+    ativo: "Ativo",
+    pausado: "Pausado",
+    encerrado: "Encerrado",
+  };
+
+  return labels[status] || "Rascunho";
 }
 
 function slugify(value) {
