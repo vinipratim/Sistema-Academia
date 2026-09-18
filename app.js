@@ -139,6 +139,7 @@ const elements = {
   workoutSelect: document.querySelector("#workoutSelect"),
   newWorkoutBtn: document.querySelector("#newWorkoutBtn"),
   saveWorkoutBtn: document.querySelector("#saveWorkoutBtn"),
+  duplicateWorkoutBtn: document.querySelector("#duplicateWorkoutBtn"),
   generalNotes: document.querySelector("#generalNotes"),
   libraryExerciseSelect: document.querySelector("#libraryExerciseSelect"),
   libraryExerciseName: document.querySelector("#libraryExerciseName"),
@@ -252,6 +253,7 @@ function bindStaticEvents() {
 
   elements.newWorkoutBtn.addEventListener("click", newWorkout);
   elements.saveWorkoutBtn.addEventListener("click", saveWorkout);
+  elements.duplicateWorkoutBtn.addEventListener("click", duplicateWorkout);
 
   elements.generalNotes.addEventListener("input", (event) => {
     state.notes = event.target.value;
@@ -368,6 +370,35 @@ function saveWorkout() {
   render();
   persist();
   toast("Treino salvo para o aluno.");
+}
+
+function duplicateWorkout() {
+  if (!state.selectedStudentId) {
+    toast("Selecione ou salve um aluno antes de duplicar.");
+    return;
+  }
+
+  const title = state.title.trim() || "Treino sem titulo";
+  const workout = {
+    id: createId(),
+    studentId: state.selectedStudentId,
+    title: `Copia - ${title}`,
+    profile: state.profile,
+    notes: state.notes,
+    days: clone(state.days),
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.savedWorkouts.push(workout);
+  state.selectedWorkoutId = workout.id;
+  state.title = workout.title;
+  state.profile = workout.profile;
+  state.notes = workout.notes;
+  state.days = clone(workout.days);
+  state.activeDay = 0;
+  render();
+  persist();
+  toast("Treino duplicado.");
 }
 
 function selectWorkout(workoutId) {
