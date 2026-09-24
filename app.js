@@ -198,6 +198,7 @@ const elements = {
   increaseDayBtn: document.querySelector("#increaseDayBtn"),
   saveBtn: document.querySelector("#saveBtn"),
   previewBtn: document.querySelector("#previewBtn"),
+  pdfBtn: document.querySelector("#pdfBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
   previewPanel: document.querySelector("#previewPanel"),
 };
@@ -220,7 +221,11 @@ function loadState() {
 }
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("Failed to persist local state:", error);
+  }
   persistRemoteState();
 }
 
@@ -271,6 +276,7 @@ function persistRemoteState() {
 }
 
 function getAuthHeaders() {
+  // Use Bearer scheme, matching the server token response { token }
   return authToken ? { Authorization: `Bearer ${authToken}` } : {};
 }
 
@@ -507,6 +513,7 @@ function bindStaticEvents() {
   });
 
   elements.downloadBtn.addEventListener("click", downloadDocx);
+  elements.pdfBtn.addEventListener("click", downloadPdf);
 }
 
 function selectStudent(studentId) {
@@ -1517,6 +1524,52 @@ function formatCardio() {
   ]
     .filter(Boolean)
     .join(" - ");
+}
+
+function downloadPdf() {
+  if (!window.jspdf?.jsPDF) {
+    toast("A biblioteca de PDF ainda nao carregou. Tente novamente em alguns segundos.");
+    return;
+  }
+
+  const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+  const margin = 15;
+  const width = 180;
+  let y = 18;
+  const write = (text, options = {}) => {
+    const { bold = false, size = 10, gap = 3 } = options;
+    pdf.setFont("helvetica", bold ? "bold" : "normal");
+    pdf.setFontSize(size);
+    const lines = pdf.splitTextToSize(String(text), width);
+    if (y + lines.length * (size * 0.42) > 280) {
+      pdf.addPage();
+      y = 18;
+    }
+    pdf.text(lines, margin, y);
+    y += lines.length * (size * 0.42) + gap;
+  };
+
+  write(state.title || "Treino", { bold: true, size: 18, gap: 7 });
+  write(`Aluno: ${state.studentName || "-"}`);
+  write(`Professor: ${state.teacherName || "-"}`);
+  write(`Divisao: ${getProfileLabel(state.profile)} | Status: ${getWorkoutStatusLabel(state.workoutStatus)}`, { gap: 5 });
+  if (state.workoutStartDate || state.workoutEndDate) write(`Periodo: ${state.workoutStartDate || "-"} a ${state.workoutEndDate || "-"}`);
+  if (state.notes.trim()) write(`Observacoes: ${state.notes.trim()}`, { gap: 5 });
+  if (hasCardio()) write(`Cardio: ${formatCardio()}`, { gap: 5 });
+
+  state.days.forEach((day) => {
+    write(`Dia ${day.name}${day.focus && day.focus !== "Personalizado" ? ` — ${day.focus}` : ""}`, { bold: true, size: 13, gap: 3 });
+    if (day.warmup) write(`Aquecimento: ${day.warmup}`);
+    if (day.notes) write(`Observacoes do dia: ${day.notes}`);
+    day.exercises.forEach((exercise, index) => {
+      const [name, sets, reps, load, rest, notes] = exercise;
+      write(`${index + 1}. ${name || "Exercicio"} — ${sets || "-"} series x ${reps || "-"} reps${load ? ` | Carga: ${load}` : ""}${rest ? ` | Descanso: ${rest}` : ""}${notes ? ` | ${notes}` : ""}`);
+    });
+    y += 2;
+  });
+
+  pdf.save(`${slugify(state.title || "treino")}.pdf`);
+  toast("PDF gerado.");
 }
 
 async function downloadDocx() {
