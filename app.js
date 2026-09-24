@@ -199,6 +199,7 @@ const elements = {
   saveBtn: document.querySelector("#saveBtn"),
   previewBtn: document.querySelector("#previewBtn"),
   pdfBtn: document.querySelector("#pdfBtn"),
+  printBtn: document.querySelector("#printBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
   previewPanel: document.querySelector("#previewPanel"),
 };
@@ -514,6 +515,11 @@ function bindStaticEvents() {
 
   elements.downloadBtn.addEventListener("click", downloadDocx);
   elements.pdfBtn.addEventListener("click", downloadPdf);
+  elements.printBtn.addEventListener("click", () => {
+    state.showPreview = true;
+    render();
+    window.print();
+  });
 }
 
 function selectStudent(studentId) {
