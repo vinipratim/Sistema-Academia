@@ -1,5 +1,6 @@
 const STORAGE_KEY = "sistema-treinos-v2";
 const AUTH_TOKEN_KEY = "sistema-treinos-auth-token";
+const THEME_KEY = "sistema-treinos-theme";
 const API_STATE_URL = "/api/state";
 const API_LOGIN_URL = "/api/login";
 let remotePersistenceAvailable = false;
@@ -200,6 +201,7 @@ const elements = {
   previewBtn: document.querySelector("#previewBtn"),
   pdfBtn: document.querySelector("#pdfBtn"),
   printBtn: document.querySelector("#printBtn"),
+  themeBtn: document.querySelector("#themeBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
   previewPanel: document.querySelector("#previewPanel"),
 };
@@ -520,6 +522,21 @@ function bindStaticEvents() {
     render();
     window.print();
   });
+  elements.themeBtn.addEventListener("click", toggleTheme);
+}
+
+function applyTheme(theme) {
+  const dark = theme === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  elements.themeBtn.setAttribute("aria-pressed", String(dark));
+  elements.themeBtn.innerHTML = `<i data-lucide="${dark ? "sun" : "moon"}"></i>${dark ? "Tema claro" : "Tema escuro"}`;
+  window.lucide?.createIcons();
+}
+
+function toggleTheme() {
+  const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme(theme);
 }
 
 function selectStudent(studentId) {
@@ -1914,5 +1931,6 @@ function toast(message) {
 }
 
 bindStaticEvents();
+applyTheme(localStorage.getItem(THEME_KEY) || "light");
 render();
 hydrateRemoteState();
