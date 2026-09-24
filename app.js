@@ -202,6 +202,9 @@ const elements = {
   pdfBtn: document.querySelector("#pdfBtn"),
   printBtn: document.querySelector("#printBtn"),
   themeBtn: document.querySelector("#themeBtn"),
+  backupBtn: document.querySelector("#backupBtn"),
+  restoreBtn: document.querySelector("#restoreBtn"),
+  restoreInput: document.querySelector("#restoreInput"),
   downloadBtn: document.querySelector("#downloadBtn"),
   previewPanel: document.querySelector("#previewPanel"),
 };
@@ -523,6 +526,38 @@ function bindStaticEvents() {
     window.print();
   });
   elements.themeBtn.addEventListener("click", toggleTheme);
+  elements.backupBtn.addEventListener("click", downloadBackup);
+  elements.restoreBtn.addEventListener("click", () => elements.restoreInput.click());
+  elements.restoreInput.addEventListener("change", restoreBackup);
+}
+
+function downloadBackup() {
+  const backup = { version: 1, createdAt: new Date().toISOString(), state };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${slugify(state.title || "sistema-academia")}-backup.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 500);
+  toast("Backup baixado.");
+}
+
+async function restoreBackup(event) {
+  const [file] = event.target.files;
+  event.target.value = "";
+  if (!file) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    if (!backup || typeof backup.state !== "object" || Array.isArray(backup.state)) throw new Error("invalid backup");
+    if (!confirm("Restaurar este backup substituirá os dados atuais. Continuar?")) return;
+    state = backup.state;
+    normalizeState();
+    persist();
+    render();
+    toast("Backup restaurado.");
+  } catch {
+    toast("Arquivo de backup invalido.");
+  }
 }
 
 function applyTheme(theme) {
