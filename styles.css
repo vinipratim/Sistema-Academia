@@ -13,6 +13,30 @@
   --shadow: 0 16px 40px rgba(23, 33, 29, 0.08);
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111817;
+  --panel: #1b2623;
+  --panel-muted: #26342f;
+  --ink: #edf5f1;
+  --muted: #b4c3bc;
+  --line: #3a4a44;
+  --accent: #47c4b5;
+  --accent-strong: #74d9cc;
+  --gold: #e7b75c;
+  --danger: #ff8a82;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="dark"] .sidebar,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] .login-panel,
+:root[data-theme="dark"] .history-item {
+  background: var(--panel);
+}
+
 * {
   box-sizing: border-box;
 }
